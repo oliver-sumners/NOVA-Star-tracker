@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA Star Tracker — Synthetic Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#03060b;--bg2:#060d1a;--border:#0d1e33;
+  --cyan:#00d4ff;--amber:#ffaa00;--green:#00e87a;--red:#ff4060;
+  --dim:#527a96;--text:#8ab8cc;--bright:#c8dcea;
+}
+html,body{width:100%;height:100vh;background:var(--bg);color:var(--text);
+  font-family:'Share Tech Mono','Courier New',monospace;overflow:hidden;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;gap:12px}
+.logo{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;color:var(--cyan);letter-spacing:4px;white-space:nowrap}
+.logo em{color:var(--amber);font-style:normal}
+.hdr-stats{flex:1;display:flex;justify-content:center;align-items:center;gap:28px}
+.hstat{text-align:center}
+.hstat-v{font-size:12px;color:var(--bright);letter-spacing:1px}
+.hstat-l{font-size:8px;color:var(--dim);letter-spacing:2px;margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:14px;white-space:nowrap}
+.met{font-size:11px;color:var(--dim);letter-spacing:1px}
+.badge{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;
+  letter-spacing:2px;padding:3px 11px;border-radius:2px;border:1px solid;transition:all .3s}
+.badge-acq{color:var(--amber);border-color:var(--amber);background:rgba(255,170,0,.07)}
+.badge-trk{color:var(--green);border-color:var(--green);background:rgba(0,232,122,.07)}
+.main{display:flex;flex:1;min-height:0}
+.wrap{flex:1;position:relative;overflow:hidden;cursor:crosshair;background:var(--bg)}
+canvas{display:block;width:100%;height:100%}
+.corner{position:absolute;width:26px;height:26px;border-color:rgba(0,212,255,.3);border-style:solid;pointer-events:none}
+.corner-tl{top:14px;left:14px;border-width:2px 0 0 2px}
+.corner-tr{top:14px;right:14px;border-width:2px 2px 0 0}
+.corner-bl{bottom:14px;left:14px;border-width:0 0 2px 2px}
+.corner-br{bottom:14px;right:14px;border-width:0 2px 2px 0}
+.clabel{position:absolute;font-size:9px;color:rgba(0,212,255,.35);letter-spacing:1px;pointer-events:none}
+.clabel-tl{top:7px;left:46px}
+.clabel-tr{top:7px;right:46px;text-align:right}
+.clabel-bl{bottom:7px;left:50%;transform:translateX(-50%)}
+.panel{width:340px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sec{border-bottom:1px solid var(--border);padding:11px 15px;flex-shrink:0}
+.sec-t{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:3px;color:#7aA8c8;margin-bottom:9px;text-transform:uppercase}
+.att-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 6px}
+.al{font-size:8px;color:#7aA0bc;letter-spacing:1px;margin-bottom:1px}
+.av{font-size:20px;color:var(--cyan);line-height:1}
+.av.xl{font-size:24px}
+.au{font-size:9px;color:#6090ac}
+.qrow{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:1px}
+.qcell{text-align:center}
+.qltr{font-size:9px;color:#88b8d0;margin-bottom:2px;font-weight:bold}
+.qnum{font-size:12px;color:#a8cce0}
+.mrow{display:flex;gap:5px;margin-bottom:7px}
+.metric{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:2px;padding:5px 3px;text-align:center}
+.mv{font-size:20px;color:var(--amber);line-height:1}
+.ml{font-size:8px;color:#6a96b4;letter-spacing:1px;margin-top:2px}
+.crow{display:flex;justify-content:space-between;margin-bottom:3px}
+.ctrack{height:4px;background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.cfill{height:100%;border-radius:1px;transition:width .35s ease,background-color .35s}
+.sl-hdr{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:3px;color:#7aA8c8;
+  padding:9px 15px 7px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sl{flex:1;overflow-y:auto;padding:0 15px}
+.sl::-webkit-scrollbar{width:2px}
+.sl::-webkit-scrollbar-thumb{background:var(--border)}
+.sr{display:flex;align-items:center;gap:7px;padding:5px 0;
+  border-bottom:1px solid rgba(13,30,51,.8);animation:sli .25s ease}
+@keyframes sli{from{opacity:0;transform:translateX(5px)}to{opacity:1;transform:translateX(0)}}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0}
+.sname{font-size:12px;color:var(--bright);flex:1}
+.sbay{font-size:10px;color:#6090aa}
+.smag{font-size:10px;color:var(--amber);min-width:32px;text-align:right}
+.controls{border-top:1px solid var(--border);padding:7px 20px;
+  display:flex;align-items:center;gap:14px;background:var(--bg2);flex-shrink:0;flex-wrap:wrap}
+.cg{display:flex;align-items:center;gap:5px}
+.cl{font-size:9px;color:#7a9eb8;letter-spacing:1px;white-space:nowrap}
+.cv{font-size:10px;color:var(--cyan);min-width:40px}
+input[type=range]{width:88px;height:4px;accent-color:var(--cyan);cursor:pointer}
+.btn{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;
+  padding:4px 11px;background:transparent;color:var(--cyan);
+  border:1px solid rgba(0,212,255,.35);border-radius:2px;cursor:pointer;
+  text-transform:uppercase;transition:all .15s;white-space:nowrap}
+.btn:hover{background:rgba(0,212,255,.08);border-color:var(--cyan)}
+.btn.on{background:var(--amber);color:var(--bg);border-color:var(--amber)}
+.hint{font-size:9px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.nav-row{border-top:1px solid var(--border);padding:6px 20px;
+  display:flex;align-items:center;gap:8px;background:var(--bg2);flex-shrink:0;flex-wrap:wrap}
+.nav-label{font-size:9px;color:var(--dim);letter-spacing:2px;white-space:nowrap;margin-right:4px}
+.nav-btn{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:0.5px;
+  padding:3px 10px;background:transparent;color:#5080a0;
+  border:1px solid rgba(80,128,160,0.3);border-radius:2px;cursor:pointer;
+  transition:all .15s;white-space:nowrap}
+.nav-btn:hover{color:var(--cyan);border-color:rgba(0,212,255,0.5);background:rgba(0,212,255,0.06)}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo">&#9733; <em>NOVA</em></div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:1px;line-height:1.5">
+      Navigation &amp; Orientation<br>Via Astronomy
+    </div>
+  </div>
+  <div class="hdr-stats">
+    <div class="hstat"><div class="hstat-v" id="h-ra">&#8211;</div><div class="hstat-l">RA (DEG)</div></div>
+    <div class="hstat"><div class="hstat-v" id="h-dc">&#8211;</div><div class="hstat-l">DEC (DEG)</div></div>
+    <div class="hstat"><div class="hstat-v" id="h-sd">0 / 0</div><div class="hstat-l">DET / MATCH</div></div>
+  </div>
+  <div class="hdr-right">
+    <div style="display:flex;align-items:center;gap:5px;border-right:1px solid var(--border);padding-right:14px;margin-right:0">
+      <div class="met" style="color:#527a96">RA</div>
+      <input id="inp-ra" type="number" min="0" max="360" step="0.001" placeholder="0–360"
+        style="width:68px;font-family:'Share Tech Mono',monospace;font-size:10px;
+        background:rgba(0,0,0,0.4);color:var(--cyan);border:1px solid #1a3a50;
+        border-radius:2px;padding:2px 5px;">
+      <div class="met" style="color:#527a96">DEC</div>
+      <input id="inp-dc" type="number" min="-90" max="90" step="0.001" placeholder="-90–90"
+        style="width:62px;font-family:'Share Tech Mono',monospace;font-size:10px;
+        background:rgba(0,0,0,0.4);color:var(--cyan);border:1px solid #1a3a50;
+        border-radius:2px;padding:2px 5px;">
+      <button class="btn" id="btn-goto-radec" style="padding:3px 10px;font-size:9px">GO</button>
+      <button class="btn" id="btn-goto-home" style="padding:3px 7px;font-size:9px" title="Reset to RA 85, Dec 5">↺</button>
+      <div id="goto-err" style="font-size:9px;color:var(--red);display:none">!</div>
+    </div>
+    <div class="met" id="met">MET 00:00:00.000</div>
+    <div class="badge badge-acq" id="badge">ACQUIRING</div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="wrap" id="wrap">
+    <canvas id="cvs"></canvas>
+    <!-- METEOR DEFENSE OVERLAY -->
+    <div id="meteor-overlay" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:10">
+      <!-- HUD top bar -->
+      <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;
+        background:rgba(2,5,8,0.85);border:1px solid rgba(255,80,80,0.4);border-radius:4px;padding:5px 16px;pointer-events:none">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px">
+          <span style="color:#ff6060">☄ METEOR DEFENSE</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px">
+          <span style="color:#7a9eb8">SCORE</span>
+          <span style="color:#00d4ff;margin-left:6px" id="game-score">0</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px">
+          <span style="color:#7a9eb8">LEVEL</span>
+          <span style="color:#ffaa00;margin-left:6px" id="game-level">1</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px" id="game-lives-display">
+          <span style="color:#7a9eb8">SHIELD </span>
+          <span id="game-lives-icons" style="color:#00e87a">⬡⬡⬡</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#527a96" id="game-combo"></div>
+      </div>
+      <!-- Game Over hold — CONTINUE button -->
+    <div id="game-over-continue" style="display:none;position:absolute;bottom:30%;left:50%;transform:translateX(-50%);pointer-events:all;text-align:center">
+      <button onclick="showGameOverScreen()" style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:3px;
+        background:transparent;color:#ff4444;border:1px solid rgba(255,60,60,0.6);border-radius:3px;
+        padding:9px 32px;cursor:pointer;animation:gameover-pulse 1.4s ease-in-out infinite">
+        CONTINUE
+      </button>
+      <style>
+        @keyframes gameover-pulse{0%,100%{opacity:0.6;} 50%{opacity:1;}}
+      </style>
+    </div>
+      <div id="game-screen" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        background:rgba(2,5,8,0.78);pointer-events:all">
+      <!-- tiny leaderboard reset — only shown after a game has been played -->
+      <div id="game-reset-btn-wrap" style="position:absolute;bottom:8px;left:10px;display:none">
+        <button onclick="resetLeaderboard()" style="font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:0.5px;
+          background:transparent;color:#2a4a60;border:1px solid #1a3040;border-radius:2px;
+          padding:2px 6px;cursor:pointer;opacity:0.6" title="Reset leaderboard">↺ reset scores</button>
+      </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:22px;color:#ff6060;letter-spacing:3px;margin-bottom:10px">☄ METEOR DEFENSE</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#7a9eb8;margin-bottom:6px;text-align:center">
+          Hot pixels and debris are corrupting the sensor.<br>
+          <span style="color:#ff6060">Click threats</span> before they saturate. <span style="color:#ff4040">Don't shoot friendlies!</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;margin-bottom:14px;font-family:'Share Tech Mono',monospace;font-size:9px">
+          <div><span style="color:#e06020">●</span> <span style="color:#7a9eb8">Meteor — 10–50pts</span></div>
+          <div><span style="color:#40dd60">◉</span> <span style="color:#7a9eb8">UFO — 150pts ⚠ rare</span></div>
+          <div><span style="color:#c8b48c">⌐</span> <span style="color:#7a9eb8">Robotic arm — 35pts</span></div>
+          <div><span style="color:#a09080">⬡</span> <span style="color:#7a9eb8">Space junk — 15pts</span></div>
+          <div><span style="color:#00e87a">▭</span> <span style="color:#ff6060">Satellite — FRIENDLY</span></div>
+          <div><span style="color:#ffaa00">✕</span> <span style="color:#7a9eb8">Miss 3 = game over</span></div>
+        </div>
+      <div id="game-final-score" style="display:none;font-family:'Share Tech Mono',monospace;font-size:14px;color:#ffaa00;margin-bottom:8px"></div>
+        <!-- Name entry -->
+        <div id="game-name-entry" style="display:none;margin-bottom:14px;text-align:center">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#7a9eb8;margin-bottom:6px;letter-spacing:1px">ENTER YOUR INITIALS</div>
+          <div id="game-name-display" style="font-size:22px;letter-spacing:6px;margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:4px">
+            <button onclick="nameNav(-1)" style="font-family:'Share Tech Mono',monospace;font-size:10px;background:transparent;color:#7a9eb8;border:1px solid #1a3a50;border-radius:2px;padding:3px 8px;cursor:pointer">◀</button>
+            <button onclick="nameLetter(-1)" style="font-family:'Share Tech Mono',monospace;font-size:10px;background:transparent;color:#7a9eb8;border:1px solid #1a3a50;border-radius:2px;padding:3px 8px;cursor:pointer">▼</button>
+            <button onclick="nameLetter(1)" style="font-family:'Share Tech Mono',monospace;font-size:10px;background:transparent;color:#7a9eb8;border:1px solid #1a3a50;border-radius:2px;padding:3px 8px;cursor:pointer">▲</button>
+            <button onclick="nameNav(1)" style="font-family:'Share Tech Mono',monospace;font-size:10px;background:transparent;color:#7a9eb8;border:1px solid #1a3a50;border-radius:2px;padding:3px 8px;cursor:pointer">▶</button>
+            <button onclick="confirmName()" style="font-family:'Share Tech Mono',monospace;font-size:10px;background:transparent;color:#00d4ff;border:1px solid rgba(0,212,255,0.4);border-radius:2px;padding:3px 10px;cursor:pointer">SAVE</button>
+          </div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#3d6880">or use arrow keys + Enter</div>
+        </div>
+        <!-- Leaderboard -->
+        <div style="width:220px;margin-bottom:14px">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#527a96;letter-spacing:2px;margin-bottom:5px;text-align:center">LEADERBOARD</div>
+          <div id="game-leaderboard" style="font-family:'Share Tech Mono',monospace;background:rgba(0,0,0,0.3);border:1px solid #1a3a50;border-radius:3px;padding:6px 10px;min-height:30px"></div>
+        </div>
+        <button id="game-start-btn" onclick="startMeteorGame()" style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:2px;
+          background:transparent;color:#ff6060;border:1px solid rgba(255,80,80,0.6);border-radius:3px;padding:8px 28px;cursor:pointer">
+          LAUNCH DEFENSE
+        </button>
+        <button onclick="exitMeteorGame()" style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;margin-top:10px;
+          background:transparent;color:#527a96;border:1px solid #1a3a50;border-radius:3px;padding:5px 16px;cursor:pointer">
+          EXIT
+        </button>
+      </div>
+    </div>
+    <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+    <div class="clabel clabel-tl" id="fovlbl">FOV: 25.0&#176;</div>
+    <div class="clabel clabel-tr">SYNTHETIC MODE &#183; ICRS J2000</div>
+    <div class="clabel clabel-bl" id="radeclbl">&#8211;</div>
+
+    <!-- GEO orbit widget — bottom right corner of star field -->
+    <div id="geo-widget" style="position:absolute;bottom:20px;right:20px;pointer-events:none">
+      <canvas id="geo-cvs" width="180" height="180"></canvas>
+      <div style="text-align:center;font-size:8px;color:rgba(0,212,255,0.35);letter-spacing:1px;margin-top:2px">GEO ORBIT · 35,786 km</div>
+    </div>
+    <div id="star-popup" style="display:none;position:absolute;background:#060d1a;border:1px solid #00d4ff;
+      border-radius:3px;padding:11px 14px;pointer-events:none;width:230px;z-index:10">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#00d4ff" id="sp-name"></span>
+        <span style="font-size:9px;color:#6090aa" id="sp-bayer"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+        <div style="text-align:center;background:rgba(0,0,0,.4);border:1px solid #0d1e33;border-radius:2px;padding:4px 2px">
+          <div style="font-size:8px;color:#527a96;margin-bottom:2px;letter-spacing:1px">SPECTRAL</div>
+          <div style="font-size:11px;color:#ffaa00" id="sp-sp">&#8211;</div>
+        </div>
+        <div style="text-align:center;background:rgba(0,0,0,.4);border:1px solid #0d1e33;border-radius:2px;padding:4px 2px">
+          <div style="font-size:8px;color:#527a96;margin-bottom:2px;letter-spacing:1px">DIST LY</div>
+          <div style="font-size:11px;color:#ffaa00" id="sp-dist">&#8211;</div>
+        </div>
+        <div style="text-align:center;background:rgba(0,0,0,.4);border:1px solid #0d1e33;border-radius:2px;padding:4px 2px">
+          <div style="font-size:8px;color:#527a96;margin-bottom:2px;letter-spacing:1px">DIA R&#9737;</div>
+          <div style="font-size:11px;color:#ffaa00" id="sp-dia">&#8211;</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#7aA8c8;line-height:1.5" id="sp-fact"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="sec">
+      <div class="sec-t">Attitude Solution</div>
+      <div class="att-grid">
+        <div>
+          <div class="al">RIGHT ASCENSION</div>
+          <div class="av xl" id="p-ra">&#8211;</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="au">degrees</div>
+            <div style="font-size:9px;color:rgba(0,232,122,0.7);letter-spacing:0.5px" id="p-ra-err"></div>
+          </div>
+        </div>
+        <div>
+          <div class="al">DECLINATION</div>
+          <div class="av xl" id="p-dc">&#8211;</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="au">degrees</div>
+            <div style="font-size:9px;color:rgba(0,232,122,0.7);letter-spacing:0.5px" id="p-dc-err"></div>
+          </div>
+        </div>
+        <div><div class="al">ROLL ANGLE</div><div class="av" id="p-roll">&#8211;</div><div class="au">degrees</div></div>
+        <div><div class="al">ANG. RATE</div><div class="av" id="p-rate">0.00</div><div class="au">&#176;/sec</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">Quaternion (ECI &#8594; Body)</div>
+      <div style="font-size:8px;color:#3d6880;letter-spacing:0.5px;margin-bottom:6px">Hamilton · passive · ECI&#8594;body · +Z boresight · +Y down · w&#8805;0</div>
+      <div class="qrow">
+        <div class="qcell"><div class="qltr">w</div><div class="qnum" id="qw">&#8212;</div></div>
+        <div class="qcell"><div class="qltr">x</div><div class="qnum" id="qx">&#8212;</div></div>
+        <div class="qcell"><div class="qltr">y</div><div class="qnum" id="qy">&#8212;</div></div>
+        <div class="qcell"><div class="qltr">z</div><div class="qnum" id="qz">&#8212;</div></div>
+      </div>
+      <button id="btn-qinfo" onclick="(function(){var p=document.getElementById('qinfo-panel'),b=document.getElementById('btn-qinfo');var open=p.style.display==='block';p.style.display=open?'none':'block';b.textContent=(open?'&#9660;':'&#9650;')+' What is a quaternion?';})()" style="margin-top:8px;width:100%;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;padding:4px 8px;background:transparent;color:#3d6880;border:1px solid #1a3a50;border-radius:2px;cursor:pointer;text-transform:uppercase;text-align:left">&#9660; What is a quaternion?</button>
+      <div id="qinfo-panel" style="display:none;margin-top:6px;padding:9px 10px;
+        background:rgba(0,0,0,0.3);border:1px solid #1a3a50;border-radius:2px;
+        font-size:10px;line-height:1.6;color:#6a9ab8;
+        max-height:320px;overflow-y:auto">
+        <!-- Live 3D quaternion visualization -->
+        <canvas id="quat-viz" width="300" height="195" style="display:block;width:100%;margin-bottom:10px;border:1px solid #1a3a50;border-radius:2px"></canvas>
+        <div style="color:#88b8d0;font-size:9px;letter-spacing:1px;margin-bottom:6px">WHAT IS A QUATERNION?</div>
+        <p style="margin-bottom:7px">A quaternion is a compact way to describe a 3D rotation — like saying "the camera is aimed <em>this</em> way in space." Four numbers replace three ambiguous angles and avoid the mathematical trap known as gimbal lock. The star tracker solves these four numbers fresh every frame by matching the star pattern it sees to its internal catalog.</p>
+
+        <div style="color:#88b8d0;font-size:9px;letter-spacing:1px;margin:8px 0 5px">CONVENTION USED HERE</div>
+        <p style="margin-bottom:7px">This tracker outputs a <strong style="color:#88b8d0">passive ECI&#8594;body</strong> quaternion in Hamilton convention. That means it describes the rotation that takes a fixed star position in the sky (ECI frame — Earth-Centered Inertial) and transforms it into the camera's own coordinate system (body frame). The camera boresight points along the body <strong style="color:#88b8d0">+Z axis</strong>. This matches the Python QuestSolver output directly — same sign convention, same w&#8805;0 enforcement.</p>
+
+        <div style="color:#88b8d0;font-size:9px;letter-spacing:1px;margin:8px 0 5px">WHAT EACH NUMBER MEANS</div>
+        <div style="display:grid;grid-template-columns:18px 1fr;gap:5px 8px;align-items:start">
+          <span style="color:#ffaa00;font-weight:bold;padding-top:1px">w</span>
+          <span>Think of it like a "how much rotation" number. It is always between 0 and 1 here (we force w&#8805;0). When w is close to 1, the camera is pointing close to its reference direction (Dec=0°, RA=0°). As the camera rotates further away, w decreases toward 0. You rarely interpret w alone — it works together with x, y, z. This matches exactly how your Python code enforces <code style="color:#88b8d0">if q[0] &lt; 0: q = -q</code>.</span>
+          <span style="color:#ffaa00;font-weight:bold;padding-top:1px">x</span>
+          <span>Component of the rotation axis pointing toward the vernal equinox — RA=0h on the celestial equator (where the Sun crosses the equator in spring). In the passive convention, a large x means a significant rotation about that direction was needed to bring the ECI frame into alignment with the camera.</span>
+          <span style="color:#ffaa00;font-weight:bold;padding-top:1px">y</span>
+          <span>Component of the rotation axis pointing toward RA=6h (90° east along the equator). Together with x, these two components describe the "east-west" tilt of the camera boresight relative to the equatorial plane.</span>
+          <span style="color:#ffaa00;font-weight:bold;padding-top:1px">z</span>
+          <span>Component of the rotation axis pointing toward Earth's north celestial pole. When z is large, the camera boresight is aimed near the polar region of the sky. This is why z is large when pointing at Polaris or the Little Dipper.</span>
+        </div>
+
+        <div style="margin-top:8px;padding-top:7px;border-top:1px solid #1a3a50;color:#527a96;font-size:9px">Together [x, y, z] define the axis in ECI space the spacecraft rotated around to reach its current pointing, and w encodes how far it rotated. The camera boresight direction in ECI is always the third column of R&#7488; (body +Z expressed in ECI), which gives you the RA and Dec readout above.</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-t">Detection Metrics</div>
+      <div class="mrow">
+        <div class="metric"><div class="mv" id="m-det">0</div><div class="ml">DETECTED</div></div>
+        <div class="metric"><div class="mv" id="m-mat">0</div><div class="ml">MATCHED</div></div>
+        <div class="metric"><div class="mv" id="m-conf">&#8211;</div><div class="ml">CONF.</div></div>
+      </div>
+      <div class="crow">
+        <span style="font-size:8px;color:#7a9eb8;letter-spacing:1px">SOLUTION CONFIDENCE</span>
+        <span style="font-size:9px;color:var(--green)" id="conf-pct">&#8211;</span>
+      </div>
+      <div class="ctrack"><div class="cfill" id="cfill" style="width:0%"></div></div>
+    </div>
+    <div class="sl-hdr">Identified Stars</div>
+    <div class="sl" id="sl"></div>
+  </div>
+</div>
+
+<div class="nav-row">
+  <div class="nav-label">GOTO</div>
+  <button class="nav-btn" onclick="gotoConst(85,0,25)">Orion</button>
+  <button class="nav-btn" onclick="gotoConst(185,57,25)">Big Dipper</button>
+  <button class="nav-btn" onclick="gotoConst(240,80,35)">Little Dipper</button>
+  <button class="nav-btn" onclick="gotoConst(113,30,18)">Gemini</button>
+  <button class="nav-btn" onclick="gotoConst(248,-22,22)">Scorpius</button>
+  <button class="nav-btn" onclick="gotoConst(306,42,25)">Cygnus</button>
+  <button class="nav-btn" onclick="gotoConst(12,60,22)">Cassiopeia</button>
+  <button class="nav-btn" onclick="gotoConst(186,-60,18)">Southern Cross</button>
+  <button class="nav-btn" onclick="gotoConst(155,15,25)">Leo</button>
+  <button class="nav-btn" onclick="gotoConst(279,38,25)">Summer Triangle</button>
+</div>
+
+<div id="sky-row" style="display:none;border-top:1px solid var(--border);padding:6px 20px;
+  align-items:center;gap:12px;background:#030912;flex-shrink:0;flex-wrap:wrap">
+  <div class="nav-label">LOCATION</div>
+  <select id="sky-city" style="font-family:'Share Tech Mono',monospace;font-size:9px;background:#060d1a;color:#00d4ff;border:1px solid rgba(0,212,255,0.3);border-radius:2px;padding:3px 8px;cursor:pointer;max-width:200px"></select>
+  <div id="sky-info" style="font-size:9px;color:var(--dim);letter-spacing:1px"></div>
+  <button class="nav-btn" id="btn-zenith">ZENITH</button>
+  <button class="nav-btn" id="btn-mer-s">MERIDIAN S</button>
+  <div id="sky-lst" style="font-size:10px;color:var(--cyan);letter-spacing:1px;margin-left:auto"></div>
+</div>
+
+<div class="controls">
+  <div class="cg">
+    <div class="cl">THRESHOLD</div>
+    <input type="range" id="sl-thr" min="2" max="8" step="0.5" value="6">
+    <div class="cv" id="vl-thr">6.0 mag</div>
+  </div>
+  <div class="cg">
+    <div class="cl">ROLL</div>
+    <button class="btn" onclick="nudge('sl-roll','vl-roll',-0.1,'°',true)" style="padding:3px 6px;font-size:11px;line-height:1">&#8722;</button>
+    <input type="range" id="sl-roll" min="-180" max="180" step="0.1" value="0">
+    <button class="btn" onclick="nudge('sl-roll','vl-roll',0.1,'°',true)" style="padding:3px 6px;font-size:11px;line-height:1">+</button>
+    <div style="display:flex;align-items:center;gap:0">
+      <div class="cv" id="vl-roll" style="min-width:38px">0.0°</div>
+      <button class="btn" id="btn-roll-reset" style="padding:3px 6px;font-size:9px">↺</button>
+    </div>
+  </div>
+  <div class="cg">
+    <div class="cl">FOV</div>
+    <button class="btn" onclick="nudge('sl-fov','vl-fov',-0.5,'°',false)" style="padding:3px 6px;font-size:11px;line-height:1">&#8722;</button>
+    <input type="range" id="sl-fov" min="5" max="40" step="0.5" value="25">
+    <button class="btn" onclick="nudge('sl-fov','vl-fov',0.5,'°',false)" style="padding:3px 6px;font-size:11px;line-height:1">+</button>
+    <div class="cv" id="vl-fov">25&#176;</div>
+  </div>
+  <div class="cg">
+    <div class="cl">EXPOSURE</div>
+    <button class="btn" onclick="nudge('sl-exp','vl-exp',-1,'',false)" style="padding:3px 6px;font-size:11px;line-height:1">&#8722;</button>
+    <input type="range" id="sl-exp" min="0" max="100" step="1" value="50">
+    <button class="btn" onclick="nudge('sl-exp','vl-exp',1,'',false)" style="padding:3px 6px;font-size:11px;line-height:1">+</button>
+    <div style="display:flex;align-items:center;gap:0">
+      <div class="cv" id="vl-exp" style="min-width:28px">50</div>
+      <button class="btn" id="btn-exp-reset" style="padding:3px 6px;font-size:9px">↺</button>
+    </div>
+  </div>
+  <div class="cg">
+    <div class="cl">GAIN</div>
+    <button class="btn" onclick="nudge('sl-gain','vl-gain',-1,'',false)" style="padding:3px 6px;font-size:11px;line-height:1">&#8722;</button>
+    <input type="range" id="sl-gain" min="0" max="100" step="1" value="20">
+    <button class="btn" onclick="nudge('sl-gain','vl-gain',1,'',false)" style="padding:3px 6px;font-size:11px;line-height:1">+</button>
+    <div style="display:flex;align-items:center;gap:0">
+      <div class="cv" id="vl-gain" style="min-width:28px">20</div>
+      <button class="btn" id="btn-gain-reset" style="padding:3px 6px;font-size:9px">↺</button>
+    </div>
+  </div>
+  <button class="btn" id="btn-demo">AUTO DEMO</button>
+  <button class="btn" id="btn-rot">EARTH ROT</button>
+  <button class="btn" id="btn-figures">FIGURES</button>
+  <button class="btn" id="btn-bgrings">BG RINGS</button>
+  <button class="btn on" id="btn-pipeline" style="min-width:120px">MATCHING</button>
+  <button class="btn" id="btn-sky">LIVE SKY</button>
+  <button class="btn" id="btn-meteor" style="color:#ff6060;border-color:rgba(255,80,80,0.5)">☄ METEOR DEFENSE — GAME</button>
+  <button class="btn" id="btn-reset">RESET</button>
+  <div class="hint">drag to slew &middot; scroll to zoom &middot; click star for info</div>
+</div>
+
+<script>
+var CAT=[
+  {n:"Sirius",b:"a CMa",ra:101.287,dc:-16.716,mg:-1.46},
+  {n:"Canopus",b:"a Car",ra:95.988,dc:-52.696,mg:-0.74},
+  {n:"Arcturus",b:"a Boo",ra:213.915,dc:19.182,mg:-0.05},
+  {n:"Vega",b:"a Lyr",ra:279.235,dc:38.784,mg:0.03},
+  {n:"Capella",b:"a Aur",ra:79.172,dc:45.998,mg:0.08},
+  {n:"Rigel",b:"b Ori",ra:78.634,dc:-8.202,mg:0.18},
+  {n:"Procyon",b:"a CMi",ra:114.825,dc:5.225,mg:0.40},
+  {n:"Betelgeuse",b:"a Ori",ra:88.793,dc:7.407,mg:0.45},
+  {n:"Achernar",b:"a Eri",ra:24.429,dc:-57.237,mg:0.45},
+  {n:"Hadar",b:"b Cen",ra:210.956,dc:-60.373,mg:0.61},
+  {n:"Altair",b:"a Aql",ra:297.696,dc:8.868,mg:0.76},
+  {n:"Acrux",b:"a Cru",ra:186.650,dc:-63.099,mg:0.77},
+  {n:"Aldebaran",b:"a Tau",ra:68.980,dc:16.509,mg:0.87},
+  {n:"Antares",b:"a Sco",ra:247.352,dc:-26.432,mg:0.96},
+  {n:"Spica",b:"a Vir",ra:201.298,dc:-11.161,mg:1.04},
+  {n:"Pollux",b:"b Gem",ra:116.329,dc:28.026,mg:1.16},
+  {n:"Fomalhaut",b:"a PsA",ra:344.413,dc:-29.622,mg:1.17},
+  {n:"Deneb",b:"a Cyg",ra:310.358,dc:45.280,mg:1.25},
+  {n:"Mimosa",b:"b Cru",ra:191.930,dc:-59.688,mg:1.25},
+  {n:"Regulus",b:"a Leo",ra:152.093,dc:11.967,mg:1.36},
+  {n:"Adhara",b:"e CMa",ra:104.656,dc:-28.972,mg:1.50},
+  {n:"Gacrux",b:"g Cru",ra:187.791,dc:-57.113,mg:1.63},
+  {n:"Shaula",b:"l Sco",ra:263.402,dc:-37.103,mg:1.63},
+  {n:"Bellatrix",b:"g Ori",ra:81.283,dc:6.350,mg:1.64},
+  {n:"Elnath",b:"b Tau",ra:81.573,dc:28.607,mg:1.68},
+  {n:"Alnilam",b:"e Ori",ra:84.053,dc:-1.202,mg:1.70},
+  {n:"Alnitak",b:"z Ori",ra:85.190,dc:-1.943,mg:1.74},
+  {n:"Alioth",b:"e UMa",ra:193.507,dc:55.960,mg:1.77},
+  {n:"Dubhe",b:"a UMa",ra:165.933,dc:61.751,mg:1.79},
+  {n:"Mirfak",b:"a Per",ra:51.081,dc:49.861,mg:1.79},
+  {n:"Wezen",b:"d CMa",ra:107.098,dc:-26.393,mg:1.84},
+  {n:"Kaus Aus.",b:"e Sgr",ra:276.043,dc:-34.384,mg:1.85},
+  {n:"Alkaid",b:"h UMa",ra:206.886,dc:49.313,mg:1.86},
+  {n:"Avior",b:"e Car",ra:125.629,dc:-59.510,mg:1.86},
+  {n:"Sargas",b:"th Sco",ra:264.330,dc:-42.998,mg:1.87},
+  {n:"Menkalinan",b:"b Aur",ra:89.882,dc:44.947,mg:1.90},
+  {n:"Atria",b:"a TrA",ra:252.166,dc:-69.028,mg:1.91},
+  {n:"Alhena",b:"g Gem",ra:99.428,dc:16.400,mg:1.93},
+  {n:"Peacock",b:"a Pav",ra:306.412,dc:-56.735,mg:1.94},
+  {n:"Polaris",b:"a UMi",ra:37.954,dc:89.264,mg:1.97},
+  {n:"Mirzam",b:"b CMa",ra:95.675,dc:-17.956,mg:1.98},
+  {n:"Saiph",b:"k Ori",ra:86.939,dc:-9.670,mg:2.07},
+  {n:"Alphard",b:"a Hya",ra:141.897,dc:-8.659,mg:2.00},
+  {n:"Diphda",b:"b Cet",ra:10.897,dc:-17.987,mg:2.04},
+  {n:"Mintaka",b:"d Ori",ra:83.001,dc:-0.299,mg:2.23},
+  {n:"Castor",b:"a Gem",ra:113.649,dc:31.889,mg:1.58},
+  {n:"Miaplacidus",b:"b Car",ra:138.300,dc:-69.717,mg:1.68},
+  {n:"Alphecca",b:"a CrB",ra:233.672,dc:26.715,mg:2.23},
+  {n:"Nunki",b:"s Sgr",ra:283.816,dc:-26.297,mg:2.05},
+  {n:"Mizar",b:"z UMa",ra:200.981,dc:54.926,mg:2.23},
+  {n:"Izar",b:"e Boo",ra:221.247,dc:27.074,mg:2.37},
+  {n:"Suhail",b:"l Vel",ra:136.999,dc:-43.433,mg:2.23},
+  {n:"Alpheratz",b:"a And",ra:2.097,dc:29.091,mg:2.07},
+  {n:"Imai",b:"d Cru",ra:183.786,dc:-58.749,mg:2.79},
+  {n:"Schedar",b:"a Cas",ra:10.127,dc:56.537,mg:2.24},
+  {n:"Caph",b:"b Cas",ra:2.295,dc:59.150,mg:2.28},
+  {n:"Navi",b:"g Cas",ra:14.177,dc:60.717,mg:2.15},
+  {n:"Ruchbah",b:"d Cas",ra:21.454,dc:60.235,mg:2.68},
+  {n:"Segin",b:"e Cas",ra:28.599,dc:63.670,mg:3.37},
+  {n:"Algol",b:"b Per",ra:47.042,dc:40.957,mg:2.12},
+  {n:"Mirach",b:"b And",ra:17.433,dc:35.620,mg:2.04},
+  {n:"Almach",b:"g And",ra:30.974,dc:42.330,mg:2.10},
+  {n:"Alcyone",b:"h Tau",ra:56.871,dc:24.105,mg:2.87},
+  {n:"Alheka",b:"z Tau",ra:84.411,dc:21.142,mg:3.00},
+  {n:"Tejat",b:"mu Gem",ra:95.740,dc:22.514,mg:2.87},
+  {n:"Propus",b:"h Gem",ra:93.719,dc:22.506,mg:3.28},
+  {n:"Wasat",b:"d Gem",ra:110.030,dc:21.982,mg:3.53},
+  {n:"Gomeisa",b:"b CMi",ra:111.788,dc:8.289,mg:2.90},
+  {n:"Denebola",b:"b Leo",ra:177.265,dc:14.572,mg:2.14},
+  {n:"Algieba",b:"g Leo",ra:154.993,dc:19.841,mg:2.28},
+  {n:"Zosma",b:"d Leo",ra:168.527,dc:20.524,mg:2.56},
+  {n:"Adhafera",b:"z Leo",ra:154.172,dc:23.417,mg:3.44},
+  {n:"Porrima",b:"g Vir",ra:190.415,dc:-1.449,mg:2.74},
+  {n:"Vindemiatrix",b:"e Vir",ra:195.544,dc:10.959,mg:2.83},
+  {n:"Muphrid",b:"h Boo",ra:208.671,dc:18.398,mg:2.68},
+  {n:"Seginus",b:"g Boo",ra:218.019,dc:38.308,mg:3.03},
+  {n:"Kochab",b:"b UMi",ra:222.676,dc:74.156,mg:2.08},
+  {n:"Pherkad",b:"g UMi",ra:230.182,dc:71.834,mg:3.05},
+  {n:"Yildun",b:"d UMi",ra:263.054,dc:86.587,mg:4.36},
+  {n:"Urodelus",b:"e UMi",ra:251.556,dc:82.032,mg:4.22},
+  {n:"Alifa",b:"z UMi",ra:236.014,dc:77.795,mg:4.32},
+  {n:"Anwar",b:"h UMi",ra:244.009,dc:75.756,mg:4.95},
+  {n:"Unukalhai",b:"a Ser",ra:236.067,dc:6.426,mg:2.63},
+  {n:"Rasalhague",b:"a Oph",ra:263.733,dc:12.560,mg:2.08},
+  {n:"Sabik",b:"h Oph",ra:258.044,dc:-15.724,mg:2.43},
+  {n:"Tarazed",b:"g Aql",ra:292.176,dc:10.613,mg:2.72},
+  {n:"Okab",b:"z Aql",ra:295.024,dc:13.863,mg:2.99},
+  {n:"Alshain",b:"b Aql",ra:298.828,dc:6.407,mg:3.71},
+  {n:"Sadr",b:"g Cyg",ra:305.557,dc:40.257,mg:2.23},
+  {n:"Gienah",b:"e Cyg",ra:311.553,dc:33.970,mg:2.46},
+  {n:"Albireo",b:"b Cyg",ra:292.680,dc:27.960,mg:3.09},
+  {n:"Alderamin",b:"a Cep",ra:319.645,dc:62.585,mg:2.45},
+  {n:"Enif",b:"e Peg",ra:326.165,dc:9.875,mg:2.38},
+  {n:"Markab",b:"a Peg",ra:346.190,dc:15.212,mg:2.49},
+  {n:"Scheat",b:"b Peg",ra:345.944,dc:28.083,mg:2.44},
+  {n:"Algenib",b:"g Peg",ra:3.309,dc:15.183,mg:2.83},
+  {n:"Sadalsuud",b:"b Aqr",ra:322.889,dc:-5.571,mg:2.91},
+  {n:"Sadalmelik",b:"a Aqr",ra:331.446,dc:-0.020,mg:2.95},
+  {n:"Skat",b:"d Aqr",ra:339.858,dc:-15.821,mg:3.27},
+  {n:"Dabih",b:"b Cap",ra:305.252,dc:-14.781,mg:3.05},
+  {n:"Hamal",b:"a Ari",ra:31.793,dc:23.462,mg:2.00},
+  {n:"Sheratan",b:"b Ari",ra:28.660,dc:20.808,mg:2.64},
+  {n:"Menkar",b:"a Cet",ra:45.570,dc:4.090,mg:2.54},
+  {n:"Mira",b:"o Cet",ra:34.837,dc:-2.978,mg:3.04},
+  {n:"Acamar",b:"th Eri",ra:44.565,dc:-40.305,mg:2.88},
+  {n:"Zaurak",b:"g Eri",ra:59.507,dc:-13.509,mg:2.97},
+  {n:"Kursa",b:"b Eri",ra:76.962,dc:-5.086,mg:2.79},
+  {n:"Dschubba",b:"d Sco",ra:240.083,dc:-22.622,mg:2.32},
+  {n:"Acrab",b:"b Sco",ra:241.359,dc:-19.806,mg:2.50},
+  {n:"Lesath",b:"u Sco",ra:264.329,dc:-37.296,mg:2.70},
+  {n:"Merak",b:"b UMa",ra:165.460,dc:56.383,mg:2.37},
+  {n:"Phecda",b:"g UMa",ra:178.458,dc:53.695,mg:2.44},
+  {n:"Megrez",b:"d UMa",ra:183.857,dc:57.033,mg:3.31},
+  {n:"Eltanin",b:"g Dra",ra:269.152,dc:51.489,mg:2.24},
+  {n:"Rastaban",b:"b Dra",ra:261.321,dc:52.301,mg:2.79},
+  {n:"Sheliak",b:"b Lyr",ra:282.520,dc:33.363,mg:3.52},
+  {n:"Sulafat",b:"g Lyr",ra:284.736,dc:32.690,mg:3.25},
+  {n:"Ashlesha",b:"e Hya",ra:131.174,dc:6.419,mg:3.38},
+  {n:"Ankaa",b:"a Phe",ra:6.571,dc:-42.306,mg:2.40},
+  {n:"Alrescha",b:"a Psc",ra:30.512,dc:2.764,mg:3.82}
+];
+
+var STAR_INFO={
+  "Sirius":{sp:"A1V",dist:8.6,dia:1.7,fact:"Brightest star in the night sky. Used as a navigation reference by spacecraft. Has a white dwarf companion, Sirius B."},
+  "Canopus":{sp:"A9II",dist:310,dia:71,fact:"Second brightest star. Used as an attitude reference by spacecraft since the 1960s due to its extreme brightness and southern position."},
+  "Arcturus":{sp:"K1.5III",dist:37,dia:25,fact:"Brightest star in the northern hemisphere. Moving so fast it will be invisible to the naked eye in ~150,000 years."},
+  "Vega":{sp:"A0V",dist:25,dia:2.4,fact:"Will become the north pole star in ~13,700 years due to precession. First star ever photographed in 1850."},
+  "Capella":{sp:"G8III",dist:43,dia:12,fact:"Actually a quadruple system: two binary pairs orbiting each other. Sixth brightest star in the sky."},
+  "Rigel":{sp:"B8Ia",dist:860,dia:79,fact:"Blue-white supergiant ~120,000x more luminous than the Sun - the most luminous star visible in Orion."},
+  "Procyon":{sp:"F5IV",dist:11.5,dia:2.0,fact:"Has a white dwarf companion. Its name means 'before the dog' - it rises before Sirius the dog star."},
+  "Betelgeuse":{sp:"M1-M2I",dist:700,dia:900,fact:"If placed at the Sun it would engulf Jupiter's orbit. Expected to go supernova within 100,000 years."},
+  "Achernar":{sp:"B6Vep",dist:139,dia:10,fact:"Rotates so fast it bulges at the equator - the most oblate star known. Equatorial radius is 56% larger than polar radius."},
+  "Altair":{sp:"A7V",dist:17,dia:1.8,fact:"Rotates at 286 km/s equatorial velocity - so fast it is 20% wider at the equator than poles."},
+  "Acrux":{sp:"B0.5IV",dist:320,dia:4.0,fact:"Southernmost 1st-magnitude star. Critical navigation reference for southern hemisphere spacecraft and ships."},
+  "Aldebaran":{sp:"K5III",dist:65,dia:44,fact:"Red giant eye of Taurus. Pioneer 10 is heading toward it and will pass in approximately 1.7 million years."},
+  "Antares":{sp:"M1.5Iab",dist:550,dia:700,fact:"Its name means 'rival of Mars.' So large that if placed at the Sun, it would engulf Mars's orbit."},
+  "Spica":{sp:"B1V",dist:250,dia:7.4,fact:"Helped Hipparchus discover the precession of the equinoxes around 127 BC by comparing star positions."},
+  "Pollux":{sp:"K0III",dist:34,dia:9.1,fact:"Has a confirmed exoplanet, Pollux b - a gas giant roughly 3x Jupiter's mass orbiting every 590 days."},
+  "Deneb":{sp:"A2Ia",dist:2600,dia:203,fact:"One of the most luminous stars known - roughly 200,000x the Sun. Its exact distance is still uncertain."},
+  "Regulus":{sp:"B7V",dist:79,dia:3.1,fact:"Rotates once every 15.9 hours. If it rotated just 16% faster, centrifugal force would tear it apart."},
+  "Polaris":{sp:"F7Ib",dist:433,dia:46,fact:"Currently within 0.7 degrees of the north celestial pole. Used for navigation for millennia and still used by spacecraft."},
+  "Gacrux":{sp:"M3.5III",dist:88,dia:84,fact:"Nearest red giant to the Sun. Appears on the national flags of Australia, New Zealand, Brazil, Papua New Guinea and Samoa."},
+  "Mimosa":{sp:"B0.5III",dist:280,dia:8.4,fact:"Second-brightest star of the Southern Cross, which appears on five national flags."},
+  "Dubhe":{sp:"K0III",dist:124,dia:17,fact:"The pointer star of the Big Dipper bowl - a line through Dubhe and Merak points directly to Polaris."},
+  "Merak":{sp:"A1V",dist:79,dia:3.0,fact:"Second pointer star of the Big Dipper. With Dubhe, forms a line that locates the North Star within half a degree."},
+  "Kochab":{sp:"K4III",dist:131,dia:42,fact:"Was the north pole star from ~1500 BC to ~500 BC due to Earth's axial precession. Brightest star of the Little Dipper bowl."},
+  "Castor":{sp:"A1V",dist:52,dia:2.4,fact:"Looks like a single star but is actually a sextuple system - six stars in three binary pairs, all gravitationally bound."},
+  "Mizar":{sp:"A2V",dist:78,dia:2.4,fact:"First double star discovered in 1617. Forms a famous naked-eye pair with Alcor. Actually a quadruple system."},
+  "Algol":{sp:"B8V",dist:93,dia:2.7,fact:"The Demon Star - an eclipsing binary that dims noticeably every 2.87 days as one star passes in front of the other."},
+  "Sargas":{sp:"F0II",dist:300,dia:26,fact:"One of the brightest stars in Scorpius, marking the tail just above the stinger stars Shaula and Lesath."},
+  "Vega":{sp:"A0V",dist:25,dia:2.4,fact:"One vertex of the Summer Triangle. Standard reference star for the UBV photometric magnitude system."},
+  "Algieba":{sp:"K0III",dist:130,dia:23,fact:"A beautiful visual binary. Both stars are giant orange stars orbiting each other every ~510 years."},
+  "Hadar":{sp:"B1III",dist:390,dia:7.0,fact:"Second-brightest star in Centaurus. Together with Rigil Kentaurus, forms the pointer stars of the Southern Cross."},
+  "Fomalhaut":{sp:"A3V",dist:25,dia:1.8,fact:"First star confirmed to have a debris disk imaged by Hubble. Its exoplanet 'Fomalhaut b' is one of the first directly photographed."},
+  "Adhara":{sp:"B2II",dist:430,dia:13,fact:"Second-brightest star in Canis Major. In ultraviolet light, Adhara would be the brightest star in the sky as seen from Earth."},
+  "Shaula":{sp:"B1.5IV",dist:570,dia:8.0,fact:"One of the two stinger stars of Scorpius. Its name means 'the raised tail' in Arabic."},
+  "Bellatrix":{sp:"B2III",dist:250,dia:6.0,fact:"The Amazon Star, marking Orion's right shoulder. One of the hottest stars visible to the naked eye."},
+  "Elnath":{sp:"B7III",dist:131,dia:4.7,fact:"Marks the tip of Taurus's northern horn. Historically shared between Taurus and Auriga as a border star."},
+  "Alnilam":{sp:"B0Ia",dist:2000,dia:42,fact:"The central star of Orion's belt. Among the most luminous stars known - roughly 500,000x the Sun's luminosity."},
+  "Alnitak":{sp:"O9.5Iab",dist:1260,dia:20,fact:"Easternmost belt star of Orion. Located near the Flame Nebula and Horsehead Nebula."},
+  "Alioth":{sp:"A0pCr",dist:81,dia:4.1,fact:"Brightest star in Ursa Major and the handle of the Big Dipper. Has unusual spectral variations due to magnetic fields."},
+  "Alkaid":{sp:"B3V",dist:101,dia:3.4,fact:"Tip of the Big Dipper handle. Despite being in Ursa Major, it is not gravitationally part of the Ursa Major moving group."},
+  "Mirfak":{sp:"F5Ib",dist:590,dia:62,fact:"Brightest star in Perseus. Center of the Alpha Persei Cluster, a group of about 100 stars visible to the naked eye."},
+  "Sargas":{sp:"F0II",dist:300,dia:26,fact:"One of the brightest stars in Scorpius, marking the tail just above the stinger stars Shaula and Lesath."},
+  "Menkalinan":{sp:"A2IV",dist:82,dia:2.8,fact:"Second-brightest star in Auriga. Actually a close binary - both stars complete an orbit in just 3.96 days."},
+  "Alhena":{sp:"A0IV",dist:109,dia:3.3,fact:"Marks the foot of the Gemini twins. One of the few bright stars known to have a circumstellar disk."},
+  "Peacock":{sp:"B2IV",dist:179,dia:4.8,fact:"Brightest star in Pavo the Peacock. Used as a navigation reference star by the NASA Dawn spacecraft."},
+  "Mirzam":{sp:"B1II",dist:500,dia:10,fact:"The Announcer - it rises just before Sirius, historically signaling that the brightest star was about to appear."},
+  "Saiph":{sp:"B0.5Ia",dist:720,dia:22,fact:"Marks Orion's left knee. Though similar in luminosity to Rigel, it appears much dimmer because most of its light is ultraviolet."},
+  "Alphard":{sp:"K3II",dist:180,dia:50,fact:"The Solitary One - the only bright star in Hydra. Its orange glow makes it distinctive against the sparse surrounding sky."},
+  "Mintaka":{sp:"O9.5II",dist:1070,dia:16,fact:"Westernmost star of Orion's belt and the first to rise. Sits almost exactly on the celestial equator."},
+  "Alphecca":{sp:"A0V",dist:75,dia:2.6,fact:"The brightest star in Corona Borealis, the Northern Crown. An eclipsing binary with a 17.36-day period."},
+  "Nunki":{sp:"B2.5V",dist:228,dia:4.6,fact:"Second-brightest star in Sagittarius, the Archer. One of the hotter and more massive stars visible to the naked eye."},
+  "Izar":{sp:"K0II",dist:202,dia:33,fact:"Pulcherrima - 'the most beautiful' - a celebrated double star with a golden primary and emerald companion."},
+  "Alpheratz":{sp:"B9p",dist:97,dia:2.7,fact:"Shared corner of the Great Square of Pegasus and the head of Andromeda. Its magnetic field creates unusual spectrum variations."},
+  "Schedar":{sp:"K0IIIa",dist:228,dia:42,fact:"Brightest star of Cassiopeia. An orange giant 40x larger than the Sun, with a mysterious slow variability."},
+  "Caph":{sp:"F2III",dist:54,dia:3.5,fact:"One corner of the Cassiopeia W. Pulsates slightly as a delta Scuti variable with a period of about 2.5 hours."},
+  "Navi":{sp:"B0.5IVe",dist:615,dia:10,fact:"Gamma Cassiopeiae - renamed Navi by astronaut Gus Grissom (Ivan spelled backwards). A shell star with an equatorial gas disk."},
+  "Algol":{sp:"B8V",dist:93,dia:2.7,fact:"The Demon Star - an eclipsing binary that dims noticeably every 2.87 days as one star passes in front of the other."},
+  "Mirach":{sp:"M0III",dist:199,dia:100,fact:"Second-brightest star in Andromeda. A red giant and a useful guide to find the Andromeda Galaxy nearby in the sky."},
+  "Almach":{sp:"K3IIb",dist:355,dia:80,fact:"Third-brightest star in Andromeda. A beautiful quadruple system - the closest pair shows contrasting gold and blue colors."},
+  "Castor":{sp:"A1V",dist:52,dia:2.4,fact:"Looks like a single star but is actually a sextuple system - six stars in three binary pairs, all gravitationally bound."},
+  "Mizar":{sp:"A2V",dist:78,dia:2.4,fact:"First double star discovered in 1617. Forms a famous naked-eye pair with Alcor. Actually a quadruple system."},
+  "Tejat":{sp:"M3III",dist:230,dia:80,fact:"A red giant marking one of Castor's feet. One of the coolest and largest stars in the Gemini constellation."},
+  "Denebola":{sp:"A3V",dist:36,dia:1.7,fact:"Tail of the Lion in Leo. One of the nearest stars visible to the naked eye, with a dusty debris disk suggesting a young planetary system."},
+  "Zosma":{sp:"A4V",dist:58,dia:2.1,fact:"Marks the hip of the lion in Leo. Member of the Ursa Major moving group - a loose cluster of stars sharing a common origin."},
+  "Adhafera":{sp:"F0III",dist:260,dia:6.0,fact:"Part of Leo's sickle asterism. Its name means 'the braid' in Arabic, part of the lion's mane."},
+  "Kochab":{sp:"K4III",dist:131,dia:42,fact:"Was the north pole star from ~1500 BC to ~500 BC due to Earth's axial precession. Brightest star of the Little Dipper bowl."},
+  "Pherkad":{sp:"A2Iab",dist:487,dia:48,fact:"Second bowl star of the Little Dipper. Its name means 'the dim one of the two calves' alongside Kochab."},
+  "Rasalhague":{sp:"A5III",dist:47,dia:2.7,fact:"Brightest star in Ophiuchus. Its name means 'head of the serpent collector' - the constellation represents Asclepius, god of healing."},
+  "Sabik":{sp:"A1V",dist:84,dia:1.7,fact:"Second-brightest star in Ophiuchus. Actually a close binary system - two similar A-type stars orbiting each other every 88 years."},
+  "Tarazed":{sp:"K3II",dist:460,dia:100,fact:"Flanks Altair in Aquila. Its name derives from Persian meaning 'the beam of the scale.' A supergiant 2000x more luminous than the Sun."},
+  "Sadr":{sp:"F8Ib",dist:1500,dia:150,fact:"Heart of the Northern Cross in Cygnus. Located near the North America Nebula. Its name means 'breast' in Arabic."},
+  "Gienah":{sp:"K0III",dist:72,dia:11,fact:"Wing of the Swan in Cygnus. Epsilon Cygni, not to be confused with Gienah Corvi in Corvus."},
+  "Albireo":{sp:"K3II",dist:430,dia:50,fact:"The beak of Cygnus - arguably the most beautiful double star, showing a vivid gold and blue pair through a small telescope."},
+  "Alderamin":{sp:"A7IV",dist:49,dia:2.3,fact:"Brightest star in Cepheus. Will become the north pole star around the year 7500 AD due to precession."},
+  "Markab":{sp:"B9III",dist:133,dia:4.7,fact:"Corner of the Great Square of Pegasus. Its name means 'the saddle' in Arabic. A hot blue-white giant."},
+  "Scheat":{sp:"M2II",dist:200,dia:95,fact:"Corner of the Great Square of Pegasus. An unstable red giant that varies irregularly in brightness."},
+  "Algenib":{sp:"B2IV",dist:333,dia:5.8,fact:"Corner of the Great Square of Pegasus. Its name means 'the side' or 'the flank' in Arabic."},
+  "Enif":{sp:"K2Ib",dist:690,dia:185,fact:"Nose of Pegasus. A supergiant that occasionally flares unexpectedly, brightening by up to 2 magnitudes for a short time."},
+  "Sadalsuud":{sp:"G0Ib",dist:610,dia:90,fact:"Brightest star in Aquarius. Its name means 'luckiest of the lucky' - its heliacal rising historically marked the start of spring."},
+  "Hamal":{sp:"K2III",dist:66,dia:15,fact:"Brightest star in Aries the Ram. Was the vernal equinox point around 2000 BC - the origin of the 'First Point of Aries.'"},
+  "Menkar":{sp:"M2III",dist:220,dia:89,fact:"Bright red giant in Cetus. Despite being named Alpha Ceti, it is not actually the brightest star in the constellation - Diphda is."},
+  "Acamar":{sp:"A4III",dist:161,dia:5.1,fact:"Was considered the southern end of Eridanus river in ancient times. The actual end-point Achernar was unknown to Mediterranean observers."},
+  "Dschubba":{sp:"B0.3IV",dist:402,dia:6.5,fact:"The forehead of Scorpius. Had a dramatic brightening outburst in 2000, temporarily becoming one of the brightest stars in the constellation."},
+  "Acrab":{sp:"B0.5V",dist:530,dia:6.3,fact:"Head of Scorpius. Actually a quadruple star system - the two main components are separated enough to see in binoculars."},
+  "Lesath":{sp:"B2IV",dist:530,dia:6.0,fact:"One of the two stinger stars of Scorpius alongside Shaula. Both appear close together in the sky but are unrelated physically."},
+  "Phecda":{sp:"A0Ve",dist:84,dia:2.6,fact:"Third star of the Big Dipper bowl. One of five Ursa Major stars that belong to the Ursa Major moving group - a dissolving star cluster."},
+  "Megrez":{sp:"A3V",dist:81,dia:1.4,fact:"The faintest of the seven Big Dipper stars, connecting the bowl to the handle. Its name means 'root of the tail' in Arabic."},
+  "Eltanin":{sp:"K5III",dist:148,dia:48,fact:"Brightest star in Draco. Once the north pole star around 3000 BC. Its passage overhead at Greenwich helped verify Newton's aberration of light."},
+  "Sheliak":{sp:"B7V",dist:882,dia:6.0,fact:"Beta Lyrae - prototype of a class of eclipsing binaries so close together that they share an outer atmosphere, called contact binaries."},
+  "Sulafat":{sp:"A0III",dist:620,dia:4.5,fact:"Gamma Lyrae, the other corner of the small Lyra triangle with Sheliak. Its name means 'the tortoise' in Arabic."},
+  "Ankaa":{sp:"K0III",dist:77,dia:15,fact:"Brightest star in Phoenix. Its modern name comes from the mythological phoenix bird. Part of a binary system."},
+  "Imai":{sp:"B2IV",dist:364,dia:4.5,fact:"Delta Crucis, completing the Southern Cross. Forms the left arm of the cross pointing west. Its IAU approved name Imai means 'at present' in Japanese."},
+  "Diphda":{sp:"K0III",dist:96,dia:18,fact:"Brightest star in Cetus the Whale despite being labeled Beta. Its name means 'the second frog' - a pair with Fomalhaut the first frog."},
+  "Miaplacidus":{sp:"A2IV",dist:113,dia:3.2,fact:"Second-brightest star in Carina. Its unusual name may derive from Arabic and Latin meaning 'the placid waters' of the ship Argo."},
+  "Wezen":{sp:"F8Ia",dist:1615,dia:215,fact:"Delta Canis Majoris - a yellow supergiant so luminous that if it were as close as Sirius, it would cast shadows at night."},
+  "Avior":{sp:"K3III",dist:632,dia:50,fact:"Navigation star in Carina. Circumpolar from most of the southern hemisphere, making it a key reference for southern spacecraft attitude."},
+  "Atria":{sp:"K2IIb",dist:391,dia:109,fact:"Brightest star of Triangulum Australe. Its name is simply a contraction of 'Alpha Trianguli Australis.'"},
+  "Muphrid":{sp:"G0IV",dist:37,dia:1.7,fact:"Eta Bootis, near Arcturus in the sky. At 37 light-years, almost as close as Arcturus itself. Has a planet candidate."},
+  "Unukalhai":{sp:"K2III",dist:74,dia:12,fact:"Brightest star of Serpens. Its name means 'neck of the snake' in Arabic. A spectroscopic binary with a 3-day period."},
+  "Okab":{sp:"A0Vn",dist:83,dia:2.0,fact:"Zeta Aquilae in the eagle's wings. A fast rotator spinning once every 9 hours, causing equatorial bulging."},
+  "Alshain":{sp:"G8IV",dist:45,dia:3.2,fact:"Beta Aquilae, flanking Altair on the other side from Tarazed. Its name means 'the ostrich' in Arabic."},
+  "Rasalhague":{sp:"A5III",dist:47,dia:2.7,fact:"Brightest star in Ophiuchus, the serpent bearer. The Sun passes through Ophiuchus each December but it is not an official zodiac sign."},
+  "Mira":{sp:"M7IIIe",dist:420,dia:400,fact:"The Wonderful - first periodic variable star discovered (1638). Pulsates from barely naked-eye to 3rd magnitude over a 332-day cycle."},
+  "Zaurak":{sp:"M1III",dist:203,dia:57,fact:"Gamma Eridani, a red giant in the celestial river Eridanus. Its Arabic name means 'the boat.'"},
+  "Suhail":{sp:"WC8+O7.5",dist:1080,dia:22,fact:"Lambda Velorum in the constellation Vela. Part of the former super-constellation Argo Navis, the ship of Jason and the Argonauts."},
+  "Peacock":{sp:"B2IV",dist:179,dia:4.8,fact:"Brightest star in Pavo the Peacock. Used as a navigation reference star by the NASA Dawn spacecraft at Ceres."},
+  "Kaus Aus.":{sp:"K2III",dist:145,dia:16,fact:"Epsilon Sagittarii, southernmost bright star of the Teapot asterism in Sagittarius. Name means 'southern bow' in Arabic."},
+  "Ruchbah":{sp:"A7III",dist:99,dia:3.5,fact:"Delta Cassiopeiae, one corner of the W. An eclipsing binary that dims slightly every 759 days when its companion passes in front."},
+  "Segin":{sp:"B3III",dist:442,dia:6.0,fact:"Epsilon Cassiopeiae, the trailing tip of the W asterism. One of the hotter and more massive stars in the constellation."},
+  "Alcyone":{sp:"B7IIIe",dist:440,dia:10,fact:"Brightest star of the Pleiades (Seven Sisters). A shell star surrounded by a disk of ejected gas from its rapid rotation."},
+  "Alheka":{sp:"B2IV",dist:417,dia:5.0,fact:"Zeta Tauri, tip of the Bull's southern horn. Located near the Crab Nebula - remnant of a supernova seen in 1054 AD."},
+  "Propus":{sp:"M3III",dist:349,dia:80,fact:"Eta Geminorum, one of Castor's feet. A semi-regular variable red giant that slowly pulsates over a 233-day period."},
+  "Wasat":{sp:"F2V",dist:59,dia:2.1,fact:"Delta Geminorum, near the ecliptic plane. One of the nearest solar-type stars. Occasionally occulted by the Moon and planets."},
+  "Gomeisa":{sp:"B8Ve",dist:162,dia:3.0,fact:"Beta Canis Minoris. A rapidly rotating shell star - its spin is so fast that gas is thrown outward forming an equatorial disk."},
+  "Porrima":{sp:"F0V",dist:38,dia:1.6,fact:"Gamma Virginis, a famous visual binary. Two nearly identical F-type stars orbit each other in about 169 years."},
+  "Vindemiatrix":{sp:"G8III",dist:102,dia:11,fact:"Epsilon Virginis, the Grape Gatherer. Its heliacal rising in ancient times marked the start of the grape harvest season."},
+  "Seginus":{sp:"A7III",dist:86,dia:2.6,fact:"Gamma Bootis. The name may be a corruption of Arcturus - for centuries it was misapplied to different stars across the constellation."},
+  "Yildun":{sp:"F5V",dist:172,dia:2.1,fact:"Delta Ursae Minoris, in the handle of the Little Dipper. Name means 'small star near the pole' in Turkish."},
+  "Urodelus":{sp:"A2V",dist:346,dia:2.8,fact:"Epsilon Ursae Minoris, in the Little Dipper handle. Part of the chain connecting Polaris to the bowl."},
+  "Alifa":{sp:"A2IV",dist:369,dia:3.8,fact:"Zeta Ursae Minoris, the junction point between the Little Dipper handle and bowl. Name means 'the shawl' in Arabic."},
+  "Anwar":{sp:"F2V",dist:97,dia:1.8,fact:"Eta Ursae Minoris, faintest star of the Little Dipper bowl. At 97 light-years, the closest of all the Little Dipper stars to the Sun."},
+  "Sadalmelik":{sp:"G0Ib",dist:520,dia:77,fact:"Alpha Aquarii. Name means 'lucky stars of the king' - its heliacal rising historically marked the beginning of favorable rainy seasons."},
+  "Skat":{sp:"A3V",dist:160,dia:2.0,fact:"Delta Aquarii, part of the water stream poured by Aquarius. Very close to the ecliptic, occasionally occulted by the Moon."},
+  "Dabih":{sp:"K0III",dist:328,dia:34,fact:"Beta Capricorni. Actually a wide double star - the two components are about 21,000 AU apart but appear as one to the naked eye."},
+  "Sheratan":{sp:"A5III",dist:59,dia:2.4,fact:"Beta Arietis, second-brightest star in Aries. Once marked the vernal equinox - the 'first point of Aries' - around 68 BC."},
+  "Kursa":{sp:"A3IV",dist:91,dia:2.4,fact:"Beta Eridani, the first major star of the celestial river. Name means 'the foot-stool of Orion' in Arabic."},
+  "Rastaban":{sp:"G2Ib",dist:380,dia:55,fact:"Beta Draconis, head of the Dragon. Name means 'head of the serpent.' A yellow supergiant 55 times the Sun's diameter."},
+  "Ashlesha":{sp:"K0III",dist:130,dia:12,fact:"Epsilon Hydrae, in the head of the Water Snake. Sanskrit name 'Ashlesha' is one of the 27 lunar mansions in Hindu astronomy."},
+  "Alrescha":{sp:"A2V",dist:151,dia:2.2,fact:"Alpha Piscium, the knot tying together the two fish of Pisces. A binary system - two white stars orbit each other every 720 years."}
+};
+
+var catIdx=function(n){for(var i=0;i<CAT.length;i++){if(CAT[i].n===n)return i;}return -1;};
+
+// Constellation figure art — polylines in [RA, Dec] celestial coordinates
+var CONST_ART=[
+  {name:"Orion", segs:[
+    [[87.2,14.2],[87.7,15.4],[88.4,15.5],[88.9,14.7],[88.7,13.7],[87.9,13.3],[87.2,14.2]], // head
+    [[88.1,13.2],[88.1,11.8],[88.0,7.4]], // neck
+    [[88.8,7.4],[90.3,9.6],[92.1,13.0],[93.8,16.2]], // club (right arm up)
+    [[81.3,6.35],[79.0,5.0],[75.5,3.5],[73.5,-0.5],[74.5,-6.5],[77.0,-8.5]], // shield (left arm)
+    [[88.5,6.8],[87.8,2.0],[87.5,-0.8]], // torso right
+    [[81.6,5.8],[82.5,2.0],[83.0,-0.8]], // torso left
+    [[87.5,-0.8],[83.0,-0.8]], // hips
+    [[83.0,-0.8],[80.5,-4.5],[78.6,-8.2]], // right leg → Rigel
+    [[87.5,-0.8],[87.5,-5.5],[86.9,-9.7]]  // left leg → Saiph
+  ]},
+  {name:"Ursa Major", segs:[
+    // bear head forward of bowl
+    [[158.0,60.5],[155.5,59.0],[153.5,58.5],[151.5,59.5],[151.0,61.5],[152.5,63.0],[155.5,63.5],[158.0,62.5],[159.0,61.0],[158.0,60.5]],
+    [[155.5,63.5],[155.0,65.0],[156.5,65.2]], // ear
+    [[159.0,61.0],[162.0,60.5],[165.9,61.8]], // neck to body
+    // body outline around bowl
+    [[165.9,61.8],[170.5,63.0],[179.0,63.0],[185.5,58.8],[185.0,52.5],[178.0,50.5],[169.5,51.5],[164.5,55.5],[165.9,61.8]],
+    // four legs
+    [[170.0,52.0],[169.5,47.0],[169.0,43.5]],
+    [[174.5,51.0],[174.0,46.0],[173.5,42.5]],
+    [[182.0,51.5],[182.0,47.0],[181.5,43.0]],
+    [[186.0,52.5],[186.5,47.5],[186.0,43.5]]
+  ]},
+  {name:"Gemini", segs:[
+    // Castor (left) figure
+    [[113.6,31.9],[113.0,27.5],[112.0,23.5],[111.0,19.5]], // body
+    [[113.0,27.5],[110.5,28.0],[108.5,26.5]], // left arm
+    [[113.0,27.5],[115.2,28.5]], // right arm (to Pollux)
+    [[111.0,19.5],[109.5,16.5]], [[111.0,19.5],[112.0,16.5]], // feet
+    // Pollux (right) figure
+    [[116.3,28.0],[115.5,24.5],[114.5,21.0],[113.5,17.5]], // body
+    [[115.5,24.5],[113.2,24.5]], // left arm (touches Castor's)
+    [[115.5,24.5],[117.5,25.5],[119.5,24.5]], // right arm
+    [[113.5,17.5],[112.0,15.0]], [[113.5,17.5],[114.5,15.0]] // feet
+  ]},
+  {name:"Leo", segs:[
+    // Mane outline around sickle
+    [[150.5,12.5],[151.5,17.0],[153.5,21.0],[157.0,22.5],[160.5,21.5],[162.0,18.0],[160.5,13.5],[157.5,10.0],[153.5,9.5],[150.5,12.5]],
+    // body spine
+    [[160.5,18.0],[165.0,19.5],[168.5,20.5],[173.0,18.5],[177.3,14.6]],
+    // belly
+    [[160.5,14.0],[164.0,14.0],[169.5,15.0],[174.5,13.0],[177.3,14.6]],
+    // front legs
+    [[161.5,14.0],[161.5,8.5],[161.0,5.5]], [[163.5,14.0],[163.5,8.5],[164.0,5.5]],
+    // back legs
+    [[171.5,15.5],[171.5,10.0],[171.0,7.0]], [[174.5,13.5],[174.5,8.5],[175.0,6.0]],
+    // tail curl from Denebola
+    [[177.3,14.6],[179.5,16.5],[181.5,14.5],[180.0,12.5]]
+  ]},
+  {name:"Scorpius", segs:[
+    // left claw
+    [[241.4,-19.8],[238.5,-17.5],[236.0,-18.5]],
+    // right claw
+    [[240.1,-22.6],[237.0,-23.0],[234.5,-25.5]],
+    // claw base connector
+    [[238.5,-17.5],[237.0,-23.0]],
+    // body head to Antares
+    [[241.4,-19.8],[240.1,-22.6],[243.5,-24.5],[247.4,-26.4]],
+    // body south through tail
+    [[247.4,-26.4],[252.5,-30.5],[257.5,-35.5],[261.5,-40.5],[264.3,-43.0]],
+    // stinger curve back up
+    [[264.3,-43.0],[266.0,-40.5],[265.0,-38.0],[263.4,-37.1]]
+  ]},
+  {name:"Cygnus", segs:[
+    // body + neck spine from beak (Albireo) to tail (Deneb)
+    [[292.7,28.0],[298.5,33.5],[305.6,40.3],[310.4,45.3]],
+    // head/beak oval at Albireo
+    [[292.7,28.0],[291.5,27.0],[290.5,27.8],[290.5,29.2],[291.8,30.0],[292.7,28.0]],
+    // left wing spread
+    [[305.6,40.3],[300.0,37.5],[295.5,35.0],[292.5,36.5]],
+    // right wing spread
+    [[305.6,40.3],[311.5,37.5],[316.0,35.5],[318.0,36.0]],
+    // tail fan at Deneb
+    [[310.4,45.3],[311.5,46.5],[310.5,48.0],[309.0,47.0],[310.4,45.3]]
+  ]},
+  {name:"Cassiopeia", segs:[
+    // body below W from Schedar/Navi
+    [[10.1,56.5],[10.0,54.0],[11.5,52.5]],
+    [[14.2,60.7],[14.0,58.0],[13.0,55.5],[11.5,52.5]],
+    // skirt hem
+    [[8.0,52.0],[11.5,52.5],[14.0,53.0],[16.0,52.0]],
+    // throne legs
+    [[8.0,52.0],[7.5,50.0],[9.0,49.5]],[[14.0,53.0],[13.5,50.5],[12.0,49.5]],
+    // scepter arm raised
+    [[10.1,56.5],[8.0,57.5],[6.5,58.5]]
+  ]},
+  {name:"Crux", segs:[
+    // vertical beam Gacrux–Acrux with taper
+    [[187.8,-56.5],[187.5,-58.0],[187.2,-60.0],[186.7,-62.0],[186.4,-63.5]],
+    // horizontal beam Imai–Mimosa with taper
+    [[183.5,-58.5],[185.0,-59.0],[187.0,-59.2],[189.5,-59.5],[192.0,-59.8]]
+  ]},
+  {name:"Ursa Minor", segs:[
+    // head oval (forward of Kochab toward lower RA)
+    [[215.5,73.5],[213.5,73.0],[211.5,74.0],[211.0,75.5],[212.5,77.0],[215.5,77.0],[217.5,75.5],[217.0,73.5],[215.5,73.5]],
+    // ear bump
+    [[213.5,77.0],[213.0,78.5],[215.0,78.5]],
+    // neck to body (toward Kochab)
+    [[217.5,75.5],[220.0,74.8],[222.7,74.2]],
+    // body outline around bowl stars
+    [[222.7,74.2],[227.5,72.5],[230.2,71.8],[237.5,72.0],[244.0,75.8],[242.5,79.5],[236.0,77.8],[229.0,77.5],[222.7,74.2]],
+    // four stubby legs
+    [[227.5,72.5],[227.0,69.0],[226.5,67.0]],
+    [[231.5,72.0],[231.5,68.5],[231.0,66.5]],
+    [[238.5,72.5],[238.5,68.5],[238.0,66.5]],
+    [[243.5,75.0],[244.0,71.5],[243.5,69.5]]
+  ]},
+  {name:"Lyra", segs:[
+    // Lyre U-frame around Vega
+    [[276.8,40.5],[276.2,38.5],[276.8,36.5],[279.2,35.3],[281.5,36.5],[282.0,38.5],[281.5,40.5]],
+    // top cross-bar
+    [[276.8,40.5],[281.5,40.5]],
+    // strings
+    [[278.0,40.5],[278.0,36.0]],
+    [[279.2,40.5],[279.2,35.3]],
+    [[280.5,40.5],[280.5,36.5]]
+  ]},
+  {name:"Aquila", segs:[
+    // eagle body at Altair
+    [[295.5,9.2],[297.7,8.9],[300.0,9.2]],
+    // tail
+    [[297.7,8.9],[297.7,6.2],[297.0,5.0]],
+    // left wing sweeping up
+    [[297.7,8.9],[294.0,11.5],[291.5,13.0],[290.0,12.0]],
+    // right wing sweeping up
+    [[297.7,8.9],[301.5,12.0],[304.5,13.5],[306.0,12.5]],
+    // head
+    [[295.5,9.2],[294.8,10.5],[295.5,11.8],[296.8,11.5],[296.5,9.5]]
+  ]}
+];
+
+var LINES_RAW=[
+  ["Mintaka","Alnilam"],["Alnilam","Alnitak"],
+  ["Betelgeuse","Bellatrix"],["Betelgeuse","Alnilam"],["Bellatrix","Mintaka"],
+  ["Saiph","Alnitak"],["Rigel","Mintaka"],["Rigel","Saiph"],
+  ["Dubhe","Merak"],["Merak","Phecda"],["Phecda","Megrez"],["Megrez","Dubhe"],
+  ["Megrez","Alioth"],["Alioth","Mizar"],["Mizar","Alkaid"],
+  ["Polaris","Yildun"],["Yildun","Urodelus"],["Urodelus","Alifa"],
+  ["Alifa","Kochab"],["Kochab","Pherkad"],["Pherkad","Anwar"],["Anwar","Alifa"],
+  ["Caph","Schedar"],["Schedar","Navi"],["Navi","Ruchbah"],["Ruchbah","Segin"],
+  ["Castor","Pollux"],
+  ["Castor","Tejat"],["Tejat","Propus"],["Propus","Alhena"],
+  ["Pollux","Wasat"],["Wasat","Alhena"],
+  ["Vega","Deneb"],["Vega","Altair"],["Deneb","Altair"],
+  ["Deneb","Sadr"],["Sadr","Albireo"],["Sadr","Gienah"],
+  ["Acrab","Dschubba"],["Dschubba","Antares"],
+  ["Antares","Sargas"],["Sargas","Shaula"],["Shaula","Lesath"],
+  ["Regulus","Adhafera"],["Adhafera","Algieba"],["Algieba","Zosma"],["Zosma","Denebola"],
+  ["Gacrux","Acrux"],["Imai","Mimosa"],
+  ["Mirfak","Algol"],
+  ["Alpheratz","Mirach"],["Mirach","Almach"],
+  ["Markab","Scheat"],["Scheat","Alpheratz"],["Alpheratz","Algenib"],["Algenib","Markab"],
+  ["Eltanin","Rastaban"]
+];
+var CONST_LINES=LINES_RAW.map(function(p){return[catIdx(p[0]),catIdx(p[1])];}).filter(function(p){return p[0]>=0&&p[1]>=0;});
+
+var GROUPS_RAW=[
+  {name:"Orion",stars:["Mintaka","Alnilam","Alnitak","Betelgeuse","Bellatrix","Rigel","Saiph"]},
+  {name:"Ursa Major",stars:["Dubhe","Merak","Phecda","Megrez","Alioth","Mizar","Alkaid"]},
+  {name:"Ursa Minor",stars:["Polaris","Kochab","Pherkad","Alifa","Anwar"]},
+  {name:"Cassiopeia",stars:["Caph","Schedar","Navi","Ruchbah","Segin"]},
+  {name:"Gemini",stars:["Castor","Pollux","Alhena","Tejat","Wasat"]},
+  {name:"Scorpius",stars:["Acrab","Dschubba","Antares","Sargas","Shaula"]},
+  {name:"Leo",stars:["Regulus","Algieba","Zosma","Denebola"]},
+  {name:"Cygnus",stars:["Deneb","Sadr","Albireo","Gienah"]},
+  {name:"Crux",stars:["Acrux","Mimosa","Gacrux","Imai"]},
+  {name:"Andromeda",stars:["Alpheratz","Mirach","Almach"]},
+  {name:"Pegasus",stars:["Markab","Scheat","Algenib","Alpheratz"]},
+  {name:"Lyra",stars:["Vega","Sheliak","Sulafat"]},
+  {name:"Aquila",stars:["Altair","Tarazed","Alshain"]}
+];
+var CONST_GROUPS=GROUPS_RAW.map(function(g){
+  return{name:g.name,indices:g.stars.map(catIdx).filter(function(i){return i>=0;})};
+});
+
+// Background stars
+function mkRng(seed){var s=seed>>>0;return function(){s=Math.imul(s,1664525)+1013904223|0;return(s>>>0)/4294967296;};}
+var BG=[];var rng=mkRng(7777);
+for(var i=0;i<3000;i++){BG.push({ra:rng()*360,dc:Math.asin(rng()*2-1)*180/Math.PI,mg:2.0+rng()*4.2});}
+
+// Math
+var D2R=Math.PI/180,R2D=180/Math.PI;
+function v3(ra,dc){var r=ra*D2R,d=dc*D2R;return[Math.cos(d)*Math.cos(r),Math.cos(d)*Math.sin(r),Math.sin(d)];}
+function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+function cross(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function norm(v){var n=Math.sqrt(dot(v,v));return n<1e-12?[0,0,1]:v.map(function(x){return x/n;});}
+function project(ra,dc,cam,W,H){
+  var sv=v3(ra,dc),cv=v3(cam.ra,cam.dc),c=dot(sv,cv);
+  if(c<0.015)return null;
+  var E=cross([0,0,1],cv);
+  if(dot(E,E)<1e-10)E=[1,0,0];
+  E=norm(E);var U=norm(cross(cv,E));
+  var tng=sv.map(function(v,i){return v-c*cv[i];});
+  var px=dot(tng,E)/c,py=dot(tng,U)/c,rr=cam.roll*D2R;
+  var rx=px*Math.cos(rr)-py*Math.sin(rr),ry=px*Math.sin(rr)+py*Math.cos(rr);
+  var sc=(Math.min(W,H)/2)/Math.tan(cam.fov/2*D2R);
+  return{x:W/2+rx*sc,y:H/2-ry*sc};
+}
+function toQuat(ra,dc,roll){
+  // Passive ECI→body quaternion matching Python QuestSolver convention exactly.
+  // Python camera: +Z = boresight, +X = right, +Y = DOWN (image rows increase down).
+  // The website ZYZ assumes +Y = up, so we correct with a 180° Z rotation (left-multiply by [0,0,0,1]).
+  // Convention: Hamilton, w≥0 enforced.
+  function qmul(a,b){return[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
+  function qz(a){return[Math.cos(a/2),0,0,Math.sin(a/2)];}
+  function qy(a){return[Math.cos(a/2),0,Math.sin(a/2),0];}
+  // Active body→ECI
+  var qa=qmul(qmul(qz(ra*D2R),qy((90-dc)*D2R)),qz(roll*D2R));
+  // Passive ECI→body: conjugate (negate x,y,z)
+  var qp=[qa[0],-qa[1],-qa[2],-qa[3]];
+  // Correct for Python's image-Y-down convention: left-multiply by q=[0,0,0,1]
+  var qc=qmul([0,0,0,1],qp);
+  // Force w≥0
+  if(qc[0]<0){qc=qc.map(function(v){return -v;});}
+  var len=Math.sqrt(qc.reduce(function(s,v){return s+v*v;},0));
+  return qc.map(function(v){return v/len;});
+}
+
+// State
+var cam={ra:85,dc:0,roll:0,fov:25};
+var thresh=6,demoOn=false,demoT=0,earthRot=false,bgRings=false,showFigures=false,pipelineMode=3;
+var exposure=50,gain=20,skyMode=false,skyLat=40.71,skyLon=-74.01,skyInterval=null;
+var dragging=false,wasDragging=false,lastXY=null;
+var angRate=0,prevRa=cam.ra,prevDc=cam.dc,prevT=performance.now();
+var matchedStars=[];
+var t0=Date.now();
+var animP={},animPBG={};
+
+// Canvas
+var cvs=document.getElementById("cvs");
+var ctx=cvs.getContext("2d");
+var W=0,H=0;
+function resize(){var wr=document.getElementById("wrap");W=cvs.width=wr.clientWidth;H=cvs.height=wr.clientHeight;}
+resize();
+window.addEventListener("resize",resize);
+
+function $(id){return document.getElementById(id);}
+
+var frame=0;
+function draw(){
+  frame++;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle="#020508";ctx.fillRect(0,0,W,H);
+  drawGrid();drawScanline();
+  if(showFigures)drawConstellationArt();
+  var visBg=[],visCat=[];
+  for(var i=0;i<BG.length;i++){
+    var p=project(BG[i].ra,BG[i].dc,cam,W,H);
+    if(p&&p.x>-20&&p.x<W+20&&p.y>-20&&p.y<H+20)visBg.push({s:BG[i],p:p,bi:i});
+  }
+  for(var i=0;i<CAT.length;i++){
+    var p=project(CAT[i].ra,CAT[i].dc,cam,W,H);
+    if(p&&p.x>-30&&p.x<W+30&&p.y>-30&&p.y<H+30)visCat.push({s:CAT[i],p:p,ci:i});
+  }
+  drawConstellations(visCat);
+  // BG stars
+  var visBgIds={},bgDetCount=0;
+  for(var k=0;k<visBg.length;k++){
+    var s=visBg[k].s,p=visBg[k].p,bi=visBg[k].bi;
+    var expF=0.4+(exposure/100)*1.2;
+    var r=Math.max(0.4,(1.6-s.mg*0.16)*Math.sqrt(expF));
+    var a=Math.max(0.04,(0.82-s.mg*0.09)*expF);
+    var noiseAmp=(gain/100)*(gain/100)*2;
+    var bx=noiseAmp>0.1?p.x+(Math.random()-0.5)*noiseAmp:p.x;
+    var by=noiseAmp>0.1?p.y+(Math.random()-0.5)*noiseAmp:p.y;
+    ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);ctx.fillStyle="rgba(190,215,245,"+a+")";ctx.fill();
+    if(s.mg>thresh)continue;
+    visBgIds[bi]=true;bgDetCount++;
+    if(!bgRings||pipelineMode===0)continue;
+    if(!(bi in animPBG))animPBG[bi]=0;
+    animPBG[bi]=Math.min(animPBG[bi]+0.035,1);
+    var ph=animPBG[bi];
+    var nx=p.x+Math.sin(frame*0.31+bi*0.97)*0.6,ny=p.y+Math.cos(frame*0.47+bi*1.43)*0.6;
+    var rr=6+(1-ph)*13;
+    ctx.beginPath();ctx.arc(nx,ny,rr,0,Math.PI*2);ctx.strokeStyle="rgba(255,170,0,"+ph*0.55+")";ctx.lineWidth=0.65;ctx.stroke();
+    ctx.strokeStyle="rgba(255,170,0,"+ph*0.65+")";ctx.lineWidth=0.55;
+    ctx.beginPath();ctx.moveTo(nx-8,ny);ctx.lineTo(nx-2,ny);ctx.moveTo(nx+2,ny);ctx.lineTo(nx+8,ny);ctx.moveTo(nx,ny-8);ctx.lineTo(nx,ny-2);ctx.moveTo(nx,ny+2);ctx.lineTo(nx,ny+8);ctx.stroke();
+  }
+  for(var k in animPBG){if(!visBgIds[k])delete animPBG[k];}
+  // Catalog stars
+  var nowMatched=[],catDetCount=0;
+  for(var k=0;k<visCat.length;k++){
+    var s=visCat[k].s,p=visCat[k].p,ci=visCat[k].ci;
+    var det=s.mg<=thresh;
+    var rgb="200,220,255";
+    if(s.n==="Betelgeuse"||s.n==="Antares"||s.n==="Aldebaran"||s.n==="Gacrux")rgb="255,170,80";
+    else if(s.n==="Sirius"||s.n==="Rigel"||s.n==="Vega")rgb="175,215,255";
+    else if(s.n==="Capella"||s.n==="Canopus")rgb="255,245,195";
+    drawDot(p.x,p.y,s.mg,det,rgb);
+    if(!det){delete animP[ci];continue;}
+    catDetCount++;
+    if(pipelineMode===0)continue;
+    if(!(ci in animP))animP[ci]=0;
+    animP[ci]=Math.min(animP[ci]+0.033,1);
+    var ph=animP[ci];
+    var nx=p.x+Math.sin(frame*0.31+ci*1.7)*0.7,ny=p.y+Math.cos(frame*0.47+ci*2.3)*0.7;
+    ctx.beginPath();ctx.arc(nx,ny,9+(1-ph)*18,0,Math.PI*2);ctx.strokeStyle="rgba(255,170,0,"+ph*0.8+")";ctx.lineWidth=0.9;ctx.stroke();
+    ctx.strokeStyle="rgba(255,170,0,"+ph+")";ctx.lineWidth=0.7;
+    ctx.beginPath();ctx.moveTo(nx-11,ny);ctx.lineTo(nx-3,ny);ctx.moveTo(nx+3,ny);ctx.lineTo(nx+11,ny);ctx.moveTo(nx,ny-11);ctx.lineTo(nx,ny-3);ctx.moveTo(nx,ny+3);ctx.lineTo(nx,ny+11);ctx.stroke();
+    if(ph>0.5&&pipelineMode===3){
+      var la=Math.min(1,(ph-0.5)*2);
+      ctx.beginPath();ctx.arc(nx,ny,14,0,Math.PI*2);ctx.strokeStyle="rgba(0,212,255,"+la*0.8+")";ctx.lineWidth=1.1;ctx.stroke();
+      var ta=Math.max(0,(ph-0.7)*3.3);
+      if(ta>0){
+        ctx.font='11px "Share Tech Mono","Courier New",monospace';ctx.fillStyle="rgba(0,212,255,"+ta+")";ctx.fillText(s.n,nx+19,ny-6);
+        ctx.font='9px "Share Tech Mono","Courier New",monospace';ctx.fillStyle="rgba(70,145,195,"+ta+")";ctx.fillText(s.b,nx+19,ny+5);
+      }
+      nowMatched.push(s);
+    }
+  }
+  if(gameActive){
+    // screen shake
+    if(gameShake>0){
+      gameShake--;
+      gameShakeX=(Math.random()-0.5)*gameShake*1.2;
+      gameShakeY=(Math.random()-0.5)*gameShake*1.2;
+      ctx.save();ctx.translate(gameShakeX,gameShakeY);
+    }
+    updateGame();drawGameObjects();
+    if(gameShake>0||gameShakeX!==0){ctx.restore();if(gameShake===0){gameShakeX=0;gameShakeY=0;}}
+  }
+  if(cinematicActive){drawCinematic();}
+  if(gameOverHold){drawGameOverHold();}
+  // Gain hot pixels
+  if(gain>40){
+    var hotCount=Math.floor((gain-40)/60*20);
+    for(var h=0;h<hotCount;h++){
+      var hx=((frame*7919+h*7187)%10000)/10000*W;
+      var hy=((frame*6271+h*5003)%10000)/10000*H;
+      var ha=0.3+(gain-40)/60*0.6;
+      ctx.beginPath();ctx.arc(hx,hy,0.8,0,Math.PI*2);
+      ctx.fillStyle="rgba(255,240,200,"+ha+")";ctx.fill();
+    }
+  }
+  if(pipelineMode===2)drawTriangleMatching(visCat);
+  drawReticle();
+  matchedStars=nowMatched;
+  updatePanel(bgDetCount+catDetCount,nowMatched.length);
+}
+
+function drawDot(x,y,mg,bright,rgb){
+  var expF=0.4+(exposure/100)*1.2;
+  var r=Math.max(0.5,((bright?3.2:1.9)-mg*0.27)*Math.sqrt(expF));
+  var a=bright?Math.min(1,expF):Math.max(0.06,(1.05-mg*0.13)*expF);
+  if(bright&&mg<2){
+    var bloomR=exposure>55?r*(1+(exposure-55)/45*7):r*4;
+    var bloomA=0.12+(exposure/100)*0.28;
+    var g=ctx.createRadialGradient(x,y,0,x,y,bloomR);
+    g.addColorStop(0,"rgba("+rgb+","+bloomA+")");g.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.beginPath();ctx.arc(x,y,bloomR,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  }
+  var noiseAmp=(gain/100)*(gain/100)*2.5;
+  var nx=noiseAmp>0.1?x+(Math.random()-0.5)*noiseAmp:x;
+  var ny=noiseAmp>0.1?y+(Math.random()-0.5)*noiseAmp:y;
+  ctx.beginPath();ctx.arc(nx,ny,r,0,Math.PI*2);ctx.fillStyle="rgba("+rgb+","+a+")";ctx.fill();
+}
+
+function drawTriangleMatching(visCat){
+  var det=visCat.filter(function(e){return e.s.mg<=thresh;});
+  if(det.length<3) return;
+  var stars=det.slice(0,Math.min(det.length,10));
+  // Build triangle combos
+  var tris=[];
+  for(var a=0;a<stars.length-2;a++)
+    for(var b=a+1;b<stars.length-1;b++)
+      for(var c=b+1;c<stars.length;c++)
+        tris.push([a,b,c]);
+  if(!tris.length) return;
+  var period=45,triIdx=Math.floor(frame/period)%tris.length;
+  var phase=(frame%period)/period;
+  var matched=phase>0.55;
+
+  // Draw all inactive triangles very faint
+  ctx.save();
+  for(var i=0;i<tris.length;i++){
+    if(i===triIdx) continue;
+    var t=tris[i];
+    ctx.beginPath();
+    ctx.moveTo(stars[t[0]].p.x,stars[t[0]].p.y);
+    ctx.lineTo(stars[t[1]].p.x,stars[t[1]].p.y);
+    ctx.lineTo(stars[t[2]].p.x,stars[t[2]].p.y);
+    ctx.closePath();
+    ctx.strokeStyle="rgba(255,170,0,0.06)";ctx.lineWidth=0.5;ctx.stroke();
+  }
+
+  // Active triangle
+  var at=tris[triIdx];
+  var p0=stars[at[0]].p,p1=stars[at[1]].p,p2=stars[at[2]].p;
+  var s0=stars[at[0]].s,s1=stars[at[1]].s,s2=stars[at[2]].s;
+  var lc=matched?"rgba(0,232,122,0.9)":"rgba(255,170,0,0.85)";
+
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.closePath();
+  ctx.strokeStyle=lc;ctx.lineWidth=1.3;ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Vertex dots
+  [p0,p1,p2].forEach(function(p){
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    ctx.strokeStyle=lc;ctx.lineWidth=1;ctx.stroke();
+  });
+
+  // Angular separation labels on each side
+  function angSep(sa,sb){
+    var va=v3(sa.ra,sa.dc),vb=v3(sb.ra,sb.dc);
+    return Math.acos(Math.max(-1,Math.min(1,dot(va,vb))))*R2D;
+  }
+  var sides=[{a:p0,b:p1,s:angSep(s0,s1)},{a:p1,b:p2,s:angSep(s1,s2)},{a:p0,b:p2,s:angSep(s0,s2)}];
+  ctx.font='9px "Share Tech Mono","Courier New",monospace';
+  for(var i=0;i<sides.length;i++){
+    var mid={x:(sides[i].a.x+sides[i].b.x)/2,y:(sides[i].a.y+sides[i].b.y)/2};
+    ctx.fillStyle=lc;ctx.fillText(sides[i].s.toFixed(2)+"\u00b0",mid.x+4,mid.y-3);
+  }
+
+  // Vertex star name labels
+  ctx.font='8px "Share Tech Mono","Courier New",monospace';
+  ctx.fillStyle="rgba(200,225,255,0.65)";
+  ctx.fillText(s0.n,p0.x+9,p0.y-5);
+  ctx.fillText(s1.n,p1.x+9,p1.y-5);
+  ctx.fillText(s2.n,p2.x+9,p2.y-5);
+
+  // Hash + status overlay (bottom of canvas)
+  if(phase>0.2){
+    var hashBase=Math.abs(Math.imul(at[0]*31+at[1]*17+at[2]*7,0x9e3779b9))>>>0;
+    var hashStr="0x"+hashBase.toString(16).toUpperCase().slice(0,6);
+    ctx.font='10px "Share Tech Mono","Courier New",monospace';
+    ctx.fillStyle=matched?"rgba(0,232,122,0.9)":"rgba(255,170,0,0.75)";
+    ctx.fillText(matched?"\u2713 CATALOG MATCH  HASH: "+hashStr:"PROBING...  HASH: "+hashStr,14,H-32);
+    ctx.font='9px "Share Tech Mono","Courier New",monospace';
+    ctx.fillStyle="rgba(0,212,255,0.5)";
+    ctx.fillText("Triangle "+(triIdx+1)+" / "+tris.length+"   \u2220 "+sides[0].s.toFixed(2)+"\u00b0  "+sides[1].s.toFixed(2)+"\u00b0  "+sides[2].s.toFixed(2)+"\u00b0",14,H-16);
+  }
+  ctx.restore();
+}
+
+function drawGeoWidget(){
+  var gc=document.getElementById("geo-cvs");
+  if(!gc)return;
+  var gx=gc.getContext("2d");
+  var W2=180,H2=180,cx2=90,cy2=94;
+  gx.clearRect(0,0,W2,H2);
+
+  // Static background stars
+  var stars2=[[14,20],[34,11],[55,27],[76,7],[110,16],[138,11],[166,25],[20,55],[41,69],[69,48],[96,62],[124,41],[152,55],[27,83],[159,86],[14,117],[48,110],[149,104],[25,145],[58,138],[124,138],[155,124],[34,163],[76,159],[145,155]];
+  for(var i=0;i<stars2.length;i++){
+    gx.beginPath();gx.arc(stars2[i][0],stars2[i][1],0.9,0,Math.PI*2);
+    gx.fillStyle="rgba(180,210,255,0.30)";gx.fill();
+  }
+
+  // North pole tick
+  gx.beginPath();gx.moveTo(cx2,cy2-79);gx.lineTo(cx2,cy2-73);
+  gx.strokeStyle="rgba(0,212,255,0.25)";gx.lineWidth=1;gx.stroke();
+  gx.font='8px "Share Tech Mono","Courier New",monospace';
+  gx.fillStyle="rgba(0,212,255,0.30)";gx.textAlign="center";
+  gx.fillText("N",cx2,cy2-64);gx.textAlign="left";
+
+  // GEO orbit ring
+  var orbitR=70;var orbitTilt=0.30;
+  gx.beginPath();gx.ellipse(cx2,cy2,orbitR,orbitR*orbitTilt,0,0,Math.PI*2);
+  gx.strokeStyle="rgba(0,212,255,0.20)";gx.lineWidth=0.9;gx.setLineDash([4,5]);gx.stroke();gx.setLineDash([]);
+
+  // Earth atmosphere glow
+  var atm=gx.createRadialGradient(cx2,cy2,19,cx2,cy2,32);
+  atm.addColorStop(0,"rgba(0,80,180,0)");atm.addColorStop(0.7,"rgba(0,150,255,0.10)");atm.addColorStop(1,"rgba(0,150,255,0)");
+  gx.beginPath();gx.arc(cx2,cy2,32,0,Math.PI*2);gx.fillStyle=atm;gx.fill();
+
+  // Earth body
+  var eg=gx.createRadialGradient(cx2-5,cy2-5,0,cx2,cy2,22);
+  eg.addColorStop(0,"#1a5fa8");eg.addColorStop(0.5,"#0d3d70");eg.addColorStop(1,"#06204a");
+  gx.beginPath();gx.arc(cx2,cy2,22,0,Math.PI*2);gx.fillStyle=eg;gx.fill();
+  gx.strokeStyle="rgba(0,100,200,0.4)";gx.lineWidth=0.6;gx.stroke();
+
+  // Continents
+  gx.fillStyle="rgba(20,130,60,0.55)";
+  gx.beginPath();gx.ellipse(cx2-5,cy2-4,8,5,0.3,0,Math.PI*2);gx.fill();
+  gx.beginPath();gx.ellipse(cx2+7,cy2-3,7,7,0.8,0,Math.PI*2);gx.fill();
+  gx.beginPath();gx.ellipse(cx2+6,cy2+7,5,4,0.5,0,Math.PI*2);gx.fill();
+
+  // Equator line
+  gx.beginPath();gx.moveTo(cx2-22,cy2);gx.lineTo(cx2+22,cy2);
+  gx.strokeStyle="rgba(0,212,255,0.22)";gx.lineWidth=0.6;gx.stroke();
+
+  // ── Satellite position driven by cam.ra ──
+  // RA=0 → right side (3 o'clock), increases counter-clockwise (east)
+  // In canvas: x increases right, y increases down
+  // So: ang = -cam.ra so that increasing RA moves counter-clockwise
+  var ang=-cam.ra*Math.PI/180;
+  var sx=cx2+Math.cos(ang)*orbitR;
+  var sy=cy2+Math.sin(ang)*orbitR*orbitTilt;
+
+  // Depth: no dimming — satellite same brightness all the way around
+  var depthAlpha=1.0;
+
+  // ── Boresight direction incorporates cam.dc ──
+  // Radial outward direction (equatorial component)
+  var radAngle=Math.atan2(sy-cy2,sx-cx2);
+  var dcRad=cam.dc*Math.PI/180;
+  // In the widget: "up" = north pole = -y direction
+  // Blend radial with vertical based on sin(dc)
+  var eqComponent=Math.cos(dcRad);
+  var polComponent=Math.sin(dcRad);  // positive = north = up in widget
+  var boreX=Math.cos(radAngle)*eqComponent;
+  var boreY=Math.sin(radAngle)*eqComponent - polComponent; // subtract because y-up = y-down in canvas
+  // Normalise
+  var boreLen2=Math.sqrt(boreX*boreX+boreY*boreY);
+  if(boreLen2>0.001){boreX/=boreLen2;boreY/=boreLen2;}
+  var boreLen=28;
+  var bx=sx+boreX*boreLen;
+  var by=sy+boreY*boreLen;
+
+  // Boresight
+  gx.beginPath();gx.moveTo(sx,sy);gx.lineTo(bx,by);
+  gx.strokeStyle="rgba(255,170,0,"+(0.65*depthAlpha)+")";gx.lineWidth=1.3;gx.setLineDash([3,3]);gx.stroke();gx.setLineDash([]);
+  gx.beginPath();gx.arc(bx,by,3,0,Math.PI*2);gx.fillStyle="rgba(255,170,0,"+(0.80*depthAlpha)+")";gx.fill();
+
+  // Satellite body — always visible, dimmer on far side
+  var perpX=-boreY,perpY=boreX;
+  // Solar panels
+  gx.fillStyle="rgba(0,180,255,"+(0.75*depthAlpha)+")";
+  gx.beginPath();
+  gx.moveTo(sx+perpX*4,sy+perpY*4);gx.lineTo(sx+perpX*10,sy+perpY*10);
+  gx.lineTo(sx+perpX*10+boreX*3.5,sy+perpY*10+boreY*3.5);gx.lineTo(sx+perpX*4+boreX*3.5,sy+perpY*4+boreY*3.5);
+  gx.closePath();gx.fill();
+  gx.beginPath();
+  gx.moveTo(sx-perpX*4,sy-perpY*4);gx.lineTo(sx-perpX*10,sy-perpY*10);
+  gx.lineTo(sx-perpX*10+boreX*3.5,sy-perpY*10+boreY*3.5);gx.lineTo(sx-perpX*4+boreX*3.5,sy-perpY*4+boreY*3.5);
+  gx.closePath();gx.fill();
+  // Body
+  gx.fillStyle="#cc8800";
+  gx.beginPath();
+  gx.moveTo(sx-perpX*3.5-boreX*3.5,sy-perpY*3.5-boreY*3.5);
+  gx.lineTo(sx+perpX*3.5-boreX*3.5,sy+perpY*3.5-boreY*3.5);
+  gx.lineTo(sx+perpX*3.5+boreX*3.5,sy+perpY*3.5+boreY*3.5);
+  gx.lineTo(sx-perpX*3.5+boreX*3.5,sy-perpY*3.5+boreY*3.5);
+  gx.closePath();gx.fill();
+  // Antenna dish
+  gx.beginPath();gx.arc(bx-boreX*4,by-boreY*4,3.5,0,Math.PI*2);
+  gx.strokeStyle="rgba(200,230,255,"+(0.6*depthAlpha)+")";gx.lineWidth=1.0;gx.stroke();
+  // SAT label
+  gx.font='8px "Share Tech Mono","Courier New",monospace';
+  gx.fillStyle="rgba(255,170,0,"+(0.70*depthAlpha)+")";gx.textAlign="center";
+  gx.fillText("SAT",sx+perpX*14,sy+perpY*14+4);gx.textAlign="left";
+
+  // RA tick markers on orbit (every 90°)
+  var tickLabels=[[0,"0h"],[90,"6h"],[180,"12h"],[270,"18h"]];
+  for(var ti=0;ti<tickLabels.length;ti++){
+    var ta=-tickLabels[ti][0]*Math.PI/180;
+    var tx=cx2+Math.cos(ta)*orbitR,ty=cy2+Math.sin(ta)*orbitR*orbitTilt;
+    gx.beginPath();gx.arc(tx,ty,2,0,Math.PI*2);gx.fillStyle="rgba(0,212,255,0.28)";gx.fill();
+    gx.font='7px "Share Tech Mono","Courier New",monospace';
+    gx.fillStyle="rgba(0,212,255,0.28)";gx.textAlign="center";
+    gx.fillText(tickLabels[ti][1],tx,ty-5);
+  }
+  gx.textAlign="left";
+}
+
+function drawQuatViz(){
+  var vc=document.getElementById("quat-viz");
+  if(!vc) return;
+  var panel=document.getElementById("qinfo-panel");
+  if(!panel||panel.style.display!=="block") return;
+  var vx=vc.getContext("2d");
+  var VW=300,VH=195,cx=118,cy=100,sc=68;
+  vx.clearRect(0,0,VW,VH);
+  vx.fillStyle="#020508";vx.fillRect(0,0,VW,VH);
+
+  // Get current quaternion (passive ECI→body, matches Python convention)
+  var q=toQuat(cam.ra,cam.dc,cam.roll);
+  var qw=q[0],qx=q[1],qy=q[2],qz=q[3];
+
+  // R from passive q is ECI→body.
+  // To visualize body axes expressed in ECI we need R.T (body→ECI).
+  // R.T[col j] = j-th body axis expressed in ECI.
+  var R00=1-2*(qy*qy+qz*qz),R01=2*(qx*qy-qw*qz),R02=2*(qx*qz+qw*qy);
+  var R10=2*(qx*qy+qw*qz),R11=1-2*(qx*qx+qz*qz),R12=2*(qy*qz-qw*qx);
+  var R20=2*(qx*qz-qw*qy),R21=2*(qy*qz+qw*qx),R22=1-2*(qx*qx+qy*qy);
+  // rotB: given a body-frame unit vector, return its direction in ECI (uses R.T)
+  function rotB(bx,by,bz){return[R00*bx+R10*by+R20*bz,R01*bx+R11*by+R21*bz,R02*bx+R12*by+R22*bz];}
+
+  // Orthographic projection: view from az=210°, el=25°
+  function proj(v){
+    var sx=0.5*v[0]-0.866*v[1];
+    var sy=0.366*v[0]+0.212*v[1]-0.866*v[2];
+    return[cx+sx*sc,cy+sy*sc];
+  }
+
+  function arrow(p0,p1,color,lw){
+    vx.beginPath();vx.moveTo(p0[0],p0[1]);vx.lineTo(p1[0],p1[1]);
+    vx.strokeStyle=color;vx.lineWidth=lw;vx.stroke();
+    // arrowhead
+    var dx=p1[0]-p0[0],dy=p1[1]-p0[1],len=Math.sqrt(dx*dx+dy*dy)||1;
+    var ux=dx/len,uy=dy/len,hs=lw*2.5+2;
+    vx.beginPath();
+    vx.moveTo(p1[0],p1[1]);
+    vx.lineTo(p1[0]-ux*hs-uy*hs*0.55,p1[1]-uy*hs+ux*hs*0.55);
+    vx.lineTo(p1[0]-ux*hs+uy*hs*0.55,p1[1]-uy*hs-ux*hs*0.55);
+    vx.closePath();vx.fillStyle=color;vx.fill();
+  }
+
+  var O=proj([0,0,0]);
+
+  // Sphere outline for context
+  vx.beginPath();vx.arc(cx,cy,sc,0,Math.PI*2);
+  vx.strokeStyle="rgba(0,212,255,0.07)";vx.lineWidth=0.8;vx.stroke();
+  vx.beginPath();vx.ellipse(cx,cy,sc,sc*0.22,0,0,Math.PI*2);
+  vx.strokeStyle="rgba(0,212,255,0.07)";vx.lineWidth=0.8;vx.stroke();
+
+  // ECI reference axes (fixed, dim) — the inertial frame the quaternion rotates FROM
+  var eciDefs=[{v:[1,0,0],c:"rgba(120,160,200,0.45)",t:"X",sub:"0h"},{v:[0,1,0],c:"rgba(120,160,200,0.45)",t:"Y",sub:"6h"},{v:[0,0,1],c:"rgba(120,160,200,0.45)",t:"Z",sub:"N"}];
+  for(var i=0;i<eciDefs.length;i++){
+    var e=eciDefs[i],ep=proj(e.v);
+    arrow(O,ep,e.c,0.8);
+    vx.font='8px "Share Tech Mono","Courier New",monospace';
+    vx.fillStyle=e.c;
+    vx.fillText(e.t,ep[0]+3,ep[1]-2);
+    vx.font='7px "Share Tech Mono","Courier New",monospace';
+    vx.fillStyle="rgba(80,120,160,0.5)";
+    vx.fillText(e.sub,ep[0]+3,ep[1]+7);
+  }
+
+  // Rotation axis (x,y,z part of quaternion, dashed cyan)
+  var axL=Math.sqrt(qx*qx+qy*qy+qz*qz);
+  if(axL>0.01){
+    var axP=proj([qx/axL,qy/axL,qz/axL]);
+    var axN=proj([-qx/axL,-qy/axL,-qz/axL]);
+    vx.beginPath();vx.moveTo(axN[0],axN[1]);vx.lineTo(axP[0],axP[1]);
+    vx.strokeStyle="rgba(0,212,255,0.40)";vx.lineWidth=1.2;vx.setLineDash([4,3]);vx.stroke();vx.setLineDash([]);
+    vx.beginPath();vx.arc(axP[0],axP[1],2.5,0,Math.PI*2);vx.fillStyle="rgba(0,212,255,0.55)";vx.fill();
+    vx.font='7px "Share Tech Mono","Courier New",monospace';
+    vx.fillStyle="rgba(0,212,255,0.50)";
+    vx.fillText("ROT AXIS",axP[0]+5,axP[1]+3);
+  }
+
+  // Body axes rotated into ECI (bright) — with labels
+  var bodyDefs=[
+    {b:[1,0,0],c:"rgba(0,200,120,0.85)",lw:1.5,label:"+X (right)"},
+    {b:[0,1,0],c:"rgba(80,160,255,0.85)",lw:1.5,label:"+Y (down)"},
+    {b:[0,0,1],c:"rgba(255,150,0,1.0)", lw:2.5,label:"BORESIGHT (+Z)"}
+  ];
+  for(var i=0;i<bodyDefs.length;i++){
+    var bd=bodyDefs[i];
+    var bv=rotB(bd.b[0],bd.b[1],bd.b[2]);
+    var bp=proj(bv);
+    arrow(O,bp,bd.c,bd.lw);
+    // Label — nudge away from arrowhead so it doesn't overlap
+    var ldx=bp[0]-O[0],ldy=bp[1]-O[1],ll=Math.sqrt(ldx*ldx+ldy*ldy)||1;
+    var lox=(ldx/ll)*7,loy=(ldy/ll)*7;
+    vx.font=(i===2?'bold ':'')+'8px "Share Tech Mono","Courier New",monospace';
+    vx.fillStyle=bd.c;
+    vx.fillText(bd.label,bp[0]+lox,bp[1]+loy+3);
+  }
+
+  // Small satellite body at origin
+  var sz=6;
+  vx.fillStyle="#cc8800";vx.fillRect(O[0]-sz/2,O[1]-sz/2,sz,sz);
+  vx.fillStyle="rgba(0,160,255,0.75)";
+  vx.fillRect(O[0]-sz/2-sz,O[1]-sz*0.2,sz,sz*0.4); // left panel
+  vx.fillRect(O[0]+sz/2,O[1]-sz*0.2,sz,sz*0.4);       // right panel
+
+  // w bar — visual "how much rotation from reference"
+  var barX=VW-78,barY=8,barW=68,barH=9;
+  vx.font='7px "Share Tech Mono","Courier New",monospace';
+  vx.fillStyle="rgba(100,150,190,0.6)";vx.fillText("w = "+qw.toFixed(3),barX,barY+7);
+  var barY2=barY+11;
+  vx.fillStyle="rgba(0,0,0,0.4)";vx.fillRect(barX,barY2,barW,barH);
+  vx.strokeStyle="rgba(80,120,160,0.3)";vx.lineWidth=0.5;vx.strokeRect(barX,barY2,barW,barH);
+  // fill from center outward — center = w=0, right edge = w=1
+  var wFrac=Math.abs(qw);
+  var barFill=wFrac*barW;
+  var wColor=qw>=0?"rgba(0,200,120,0.7)":"rgba(255,80,80,0.7)";
+  vx.fillStyle=wColor;vx.fillRect(barX,barY2,barFill,barH);
+  vx.font='7px "Share Tech Mono","Courier New",monospace';
+  vx.fillStyle="rgba(80,120,160,0.55)";vx.fillText("0",barX-6,barY2+barH-1);
+  vx.fillText("1",barX+barW+2,barY2+barH-1);
+
+  // Legend (bottom strip)
+  var ly=VH-22;
+  vx.font='7px "Share Tech Mono","Courier New",monospace';
+  var items=[
+    {c:"rgba(255,150,0,0.9)",    t:"Boresight (+X)"},
+    {c:"rgba(0,200,120,0.85)",   t:"+Y axis"},
+    {c:"rgba(80,160,255,0.85)",  t:"+Z axis"},
+    {c:"rgba(0,212,255,0.50)",   t:"Rot. axis"}
+  ];
+  var lx=4;
+  for(var i=0;i<items.length;i++){
+    vx.fillStyle=items[i].c;vx.fillRect(lx,ly+4,12,2.5);
+    vx.fillStyle="rgba(100,150,190,0.7)";vx.fillText(items[i].t,lx+15,ly+9);
+    lx+=Math.floor(VW/items.length);
+  }
+}
+
+function drawConstellationArt(){
+  ctx.save();
+  ctx.strokeStyle="rgba(200,225,255,0.13)";
+  ctx.lineWidth=1.2;
+  ctx.lineJoin="round";
+  ctx.lineCap="round";
+  for(var gi=0;gi<CONST_ART.length;gi++){
+    var art=CONST_ART[gi];
+    for(var si=0;si<art.segs.length;si++){
+      var seg=art.segs[si];
+      var started=false;
+      ctx.beginPath();
+      for(var pi=0;pi<seg.length;pi++){
+        var p=project(seg[pi][0],seg[pi][1],cam,W,H);
+        if(!p){started=false;continue;}
+        if(!started){ctx.moveTo(p.x,p.y);started=true;}
+        else ctx.lineTo(p.x,p.y);
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawGrid(){
+  ctx.save();ctx.strokeStyle="rgba(0,212,255,0.04)";ctx.lineWidth=0.5;
+  for(var ra=0;ra<360;ra+=15){ctx.beginPath();var f=true;for(var d=-88;d<=88;d+=3){var p=project(ra,d,cam,W,H);if(!p){f=true;continue;}if(f){ctx.moveTo(p.x,p.y);f=false;}else ctx.lineTo(p.x,p.y);}ctx.stroke();}
+  for(var d=-80;d<=80;d+=10){ctx.beginPath();var f=true;for(var r2=0;r2<=362;r2+=2){var p=project(r2%360,d,cam,W,H);if(!p){f=true;continue;}if(f){ctx.moveTo(p.x,p.y);f=false;}else ctx.lineTo(p.x,p.y);}ctx.stroke();}
+  ctx.restore();
+}
+
+function drawConstellations(visCat){
+  var posMap={};
+  for(var k=0;k<visCat.length;k++)posMap[visCat[k].ci]=visCat[k].p;
+  ctx.save();ctx.strokeStyle="rgba(0,212,255,0.12)";ctx.lineWidth=0.8;
+  for(var k=0;k<CONST_LINES.length;k++){var a=CONST_LINES[k][0],b=CONST_LINES[k][1];if(posMap[a]&&posMap[b]){ctx.beginPath();ctx.moveTo(posMap[a].x,posMap[a].y);ctx.lineTo(posMap[b].x,posMap[b].y);ctx.stroke();}}
+  ctx.font='10px "Orbitron",sans-serif';ctx.textAlign="center";
+  for(var k=0;k<CONST_GROUPS.length;k++){
+    var g=CONST_GROUPS[k];
+    var pts=g.indices.map(function(i){return posMap[i];}).filter(function(p){return !!p;});
+    if(pts.length<Math.ceil(g.indices.length*0.6))continue;
+    var lx=pts.reduce(function(s,p){return s+p.x;},0)/pts.length;
+    var ly=pts.reduce(function(s,p){return s+p.y;},0)/pts.length;
+    if(lx<30||lx>W-30||ly<30||ly>H-30)continue;
+    ctx.fillStyle="rgba(0,212,255,0.20)";ctx.fillText(g.name.toUpperCase(),lx,ly);
+  }
+  ctx.textAlign="left";ctx.restore();
+}
+
+function drawScanline(){
+  if(matchedStars.length>=4)return;
+  var y=(frame*1.4)%H,g=ctx.createLinearGradient(0,y-30,0,y+30);
+  g.addColorStop(0,"rgba(0,212,255,0)");g.addColorStop(.5,"rgba(0,212,255,0.035)");g.addColorStop(1,"rgba(0,212,255,0)");
+  ctx.fillStyle=g;ctx.fillRect(0,y-30,W,60);
+}
+
+function drawReticle(){
+  var rx=W/2,ry=H/2;
+  ctx.save();ctx.strokeStyle="rgba(0,212,255,0.4)";ctx.lineWidth=0.9;
+  ctx.beginPath();ctx.moveTo(rx-19,ry);ctx.lineTo(rx-4,ry);ctx.moveTo(rx+4,ry);ctx.lineTo(rx+19,ry);ctx.moveTo(rx,ry-19);ctx.lineTo(rx,ry-4);ctx.moveTo(rx,ry+4);ctx.lineTo(rx,ry+19);ctx.stroke();
+  ctx.beginPath();ctx.arc(rx,ry,2.5,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(rx,ry,Math.min(W,H)*0.46,0,Math.PI*2);ctx.strokeStyle="rgba(0,212,255,0.06)";ctx.stroke();
+  ctx.restore();
+}
+
+function updatePanel(detCnt,matCnt){
+  var now=performance.now(),dt=Math.max(0.016,(now-prevT)/1000);prevT=now;
+  var dRa=(cam.ra-prevRa)*Math.cos(cam.dc*D2R),dDc=cam.dc-prevDc;
+  angRate=angRate*0.82+Math.sqrt(dRa*dRa+dDc*dDc)/dt*0.18;
+  prevRa=cam.ra;prevDc=cam.dc;
+  var locked=matCnt>=4,tracking=matCnt>=2;
+  var badge=$("badge");
+  badge.textContent=locked?"LOCKED":tracking?"TRACKING":"ACQUIRING";
+  badge.className="badge "+(tracking?"badge-trk":"badge-acq");
+  var conf=locked?Math.min(99.9,70+matCnt*4):tracking?32+matCnt*13:0;
+  $("h-ra").textContent=tracking?cam.ra.toFixed(3)+"°":"–";
+  $("h-dc").textContent=tracking?cam.dc.toFixed(3)+"°":"–";
+  $("h-sd").textContent=detCnt+" / "+matCnt;
+  $("radeclbl").textContent="RA "+cam.ra.toFixed(2)+"°  DEC "+cam.dc.toFixed(2)+"°";
+  if(tracking){$("p-ra").textContent=cam.ra.toFixed(3);$("p-dc").textContent=cam.dc.toFixed(3);$("p-roll").textContent=cam.roll.toFixed(2);
+    // Error model: base accuracy ~0.003° (10 arcsec), improves with more matches, degrades with angular rate
+    var baseErr=0.0028;
+    var matchFactor=Math.max(0.3,1.0-(matCnt-2)*0.08); // more stars = lower error
+    var rateFactor=1.0+Math.min(2.0,angRate*0.4);       // slewing degrades accuracy
+    var noiseRa=(Math.sin(frame*0.07)*0.0003);
+    var noiseDc=(Math.cos(frame*0.09)*0.0003);
+    var errRa=(baseErr*matchFactor*rateFactor+Math.abs(noiseRa)).toFixed(4);
+    var errDc=(baseErr*matchFactor*rateFactor+Math.abs(noiseDc)).toFixed(4);
+    $("p-ra-err").textContent="\xb1"+errRa+"\xb0";
+    $("p-dc-err").textContent="\xb1"+errDc+"\xb0";
+  } else {
+    $("p-ra").textContent=$("p-dc").textContent=$("p-roll").textContent="–";
+    $("p-ra-err").textContent="";$("p-dc-err").textContent="";
+  }
+  $("p-rate").textContent=Math.min(99.9,angRate).toFixed(2);
+  if(tracking){var q=toQuat(cam.ra,cam.dc,cam.roll);$("qw").textContent=q[0].toFixed(4);$("qx").textContent=q[1].toFixed(4);$("qy").textContent=q[2].toFixed(4);$("qz").textContent=q[3].toFixed(4);}
+  else{["qw","qx","qy","qz"].forEach(function(id){$(id).textContent="—";});}
+  $("m-det").textContent=detCnt;$("m-mat").textContent=matCnt;$("m-conf").textContent=tracking?conf.toFixed(1)+"%":"–";
+  $("conf-pct").textContent=tracking?conf.toFixed(1)+"%":"–";
+  var cfill=$("cfill");cfill.style.width=(tracking?conf:0)+"%";cfill.style.backgroundColor=conf>70?"#00e87a":conf>35?"#ffaa00":"#ff4060";
+  updateStarList(matchedStars);
+  var e=(Date.now()-t0)/1000,hh=Math.floor(e/3600).toString().padStart(2,"0"),mm=Math.floor(e%3600/60).toString().padStart(2,"0"),ss=(e%60).toFixed(3).padStart(6,"0");
+  $("met").textContent="MET "+hh+":"+mm+":"+ss;
+}
+
+function updateStarList(stars){
+  var sl=$("sl"),sorted=stars.slice().sort(function(a,b){return a.mg-b.mg;});
+  var nowNames={};sorted.forEach(function(s){nowNames[s.n]=true;});
+  var rows=sl.querySelectorAll(".sr");for(var i=0;i<rows.length;i++){if(!nowNames[rows[i].dataset.n])rows[i].remove();}
+  var inDom={};rows=sl.querySelectorAll(".sr");for(var i=0;i<rows.length;i++)inDom[rows[i].dataset.n]=true;
+  sorted.forEach(function(s){if(!inDom[s.n]){var row=document.createElement("div");row.className="sr";row.dataset.n=s.n;row.innerHTML='<div class="sdot"></div><div class="sname">'+s.n+'</div><div class="sbay">'+s.b+'</div><div class="smag">'+s.mg.toFixed(2)+'</div>';sl.appendChild(row);}});
+}
+
+// Animation loop
+var lastT=0;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(t-lastT<15)return;lastT=t;
+  if(demoOn){demoT+=0.0014;cam.ra=((85+Math.sin(demoT*0.65)*45)+360)%360;cam.dc=Math.max(-80,Math.min(80,5+Math.sin(demoT*0.41)*32));cam.roll=Math.sin(demoT*0.18)*14;}
+  else if(earthRot){cam.ra=((cam.ra-0.0042)+360)%360;}
+  else if(skyMode){
+    // Continuously track sidereal time — cam.ra follows LST
+    cam.ra=getLST(skyLon);
+    cam.dc=Math.max(-89,Math.min(89,skyLat));
+  }
+  // GEO widget is driven by cam.ra/dc — no separate angle needed
+  draw();
+  drawGeoWidget();
+  drawQuatViz();
+}
+requestAnimationFrame(loop);
+
+// Interaction
+var wrap=document.getElementById("wrap");
+function startDrag(x,y){if(gameActive||cinematicActive)return;dragging=true;wasDragging=false;lastXY={x:x,y:y};if(demoOn){demoOn=false;$("btn-demo").classList.remove("on");}if(earthRot){earthRot=false;$("btn-rot").classList.remove("on");}$("star-popup").style.display="none";}
+function moveDrag(x,y){if(gameActive||cinematicActive)return;
+  if(!dragging||!lastXY)return;
+  var dx=x-lastXY.x,dy=y-lastXY.y;if(Math.abs(dx)+Math.abs(dy)>3)wasDragging=true;
+  lastXY={x:x,y:y};
+  var sc=(Math.min(W,H)/2)/Math.tan(cam.fov/2*D2R);
+  var rr=cam.roll*D2R;
+  var dpx=dx*Math.cos(rr)-dy*Math.sin(rr);
+  var dpy=dx*Math.sin(rr)+dy*Math.cos(rr);
+  cam.ra=((cam.ra-dpx/sc*R2D/Math.cos(cam.dc*D2R))+360)%360;
+  cam.dc=Math.max(-89,Math.min(89,cam.dc+dpy/sc*R2D));
+  for(var k in animP)animP[k]=Math.max(0,animP[k]-0.12);
+  for(var k in animPBG)animPBG[k]=Math.max(0,animPBG[k]-0.12);
+}
+function endDrag(){dragging=false;}
+wrap.addEventListener("mousedown",function(e){startDrag(e.clientX,e.clientY);});
+wrap.addEventListener("mousemove",function(e){moveDrag(e.clientX,e.clientY);});
+wrap.addEventListener("mouseup",endDrag);
+wrap.addEventListener("mouseleave",endDrag);
+wrap.addEventListener("touchstart",function(e){e.preventDefault();startDrag(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+wrap.addEventListener("touchmove",function(e){e.preventDefault();moveDrag(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+wrap.addEventListener("touchend",endDrag);
+wrap.addEventListener("wheel",function(e){
+  e.preventDefault();
+  cam.fov=Math.max(5,Math.min(40,cam.fov+e.deltaY*0.025));
+  $("sl-fov").value=cam.fov;$("vl-fov").textContent=cam.fov.toFixed(0)+"°";$("fovlbl").textContent="FOV: "+cam.fov.toFixed(1)+"°";
+  for(var k in animP)animP[k]=0;for(var k in animPBG)animPBG[k]=0;
+},{passive:false});
+
+wrap.addEventListener("click",function(e){
+  if(wasDragging)return;
+  var rect=cvs.getBoundingClientRect();
+  var mx=(e.clientX-rect.left)*(W/rect.width),my=(e.clientY-rect.top)*(H/rect.height);
+  // meteor game intercepts clicks first
+  if(gameActive){
+    handleMeteorClick(e.clientX-rect.left, e.clientY-rect.top);
+    return;
+  }
+  var best=null,bestD=24;
+  for(var i=0;i<CAT.length;i++){
+    if(CAT[i].mg>thresh)continue;
+    var p=project(CAT[i].ra,CAT[i].dc,cam,W,H);if(!p)continue;
+    var d=Math.sqrt((p.x-mx)*(p.x-mx)+(p.y-my)*(p.y-my));
+    if(d<bestD){bestD=d;best={s:CAT[i],p:p};}
+  }
+  var popup=$("star-popup");
+  if(!best){popup.style.display="none";return;}
+  var s=best.s,info=STAR_INFO[s.n];
+  $("sp-name").textContent=s.n;$("sp-bayer").textContent=s.b;
+  $("sp-sp").textContent=info?info.sp:"–";$("sp-dist").textContent=info?info.dist:"–";$("sp-dia").textContent=info?info.dia:"–";
+  $("sp-fact").textContent=info?info.fact:"No catalog data on file.";
+  var px=best.p.x+24,py=best.p.y-10;
+  if(px+235>W)px=best.p.x-245;if(py+160>H)py=H-165;if(py<10)py=10;
+  popup.style.left=px+"px";popup.style.top=py+"px";popup.style.display="block";
+});
+
+function nudge(slId,vlId,delta,unit,isRoll){
+  var sl=$(slId);
+  var val=Math.round((parseFloat(sl.value)+delta)*1000)/1000;
+  val=Math.max(parseFloat(sl.min),Math.min(parseFloat(sl.max),val));
+  sl.value=val;
+  var disp=isRoll?val.toFixed(1)+unit:(Number.isInteger(val)?val:val.toFixed(1))+unit;
+  $(vlId).textContent=disp;
+  if(isRoll){
+    cam.roll=val;
+    for(var k in animP)animP[k]=0;for(var k in animPBG)animPBG[k]=0;
+  } else if(slId==='sl-fov'){
+    cam.fov=val;
+    $('fovlbl').textContent='FOV: '+val.toFixed(1)+'°';
+    for(var k in animP)animP[k]=0;for(var k in animPBG)animPBG[k]=0;
+  } else if(slId==='sl-exp'){
+    exposure=val;
+  } else if(slId==='sl-gain'){
+    gain=val;
+  }
+}
+
+$("btn-goto-home").addEventListener("click",function(){
+  $("inp-ra").value="";$("inp-dc").value="";
+  $("goto-err").style.display="none";
+  gotoConst(85,0,cam.fov);
+});
+function doGotoRaDec(){
+  var ra=parseFloat($("inp-ra").value);
+  var dc=parseFloat($("inp-dc").value);
+  var err=$("goto-err");
+  if(isNaN(ra)||isNaN(dc)||ra<0||ra>360||dc<-90||dc>90){err.style.display="inline";return;}
+  err.style.display="none";
+  gotoConst(ra,dc,cam.fov);
+}
+$("btn-goto-radec").addEventListener("click",doGotoRaDec);
+$("inp-ra").addEventListener("keydown",function(e){if(e.key==="Enter")doGotoRaDec();});
+$("inp-dc").addEventListener("keydown",function(e){if(e.key==="Enter")doGotoRaDec();});
+
+$("btn-roll-reset").addEventListener("click",function(){
+  cam.roll=0;$("sl-roll").value=0;$("vl-roll").textContent="0.0°";
+  for(var k in animP)animP[k]=0;for(var k in animPBG)animPBG[k]=0;
+});
+$("sl-roll").addEventListener("input",function(e){
+  cam.roll=parseFloat(e.target.value);
+  $("vl-roll").textContent=cam.roll.toFixed(1)+"°";
+  for(var k in animP)animP[k]=0;
+  for(var k in animPBG)animPBG[k]=0;
+});
+$("sl-thr").addEventListener("input",function(e){thresh=parseFloat(e.target.value);$("vl-thr").textContent=thresh.toFixed(1)+" mag";for(var k in animP)animP[k]=0;for(var k in animPBG)animPBG[k]=0;});
+$("sl-fov").addEventListener("input",function(e){cam.fov=parseFloat(e.target.value);$("vl-fov").textContent=cam.fov.toFixed(0)+"°";$("fovlbl").textContent="FOV: "+cam.fov.toFixed(1)+"°";for(var k in animP)animP[k]=0;for(var k in animPBG)animPBG[k]=0;});
+$("btn-pipeline").addEventListener("click",function(){
+  pipelineMode=(pipelineMode+1)%4;
+  var labels=["RAW FEED","DETECTING","TRIANGLES","MATCHING"];
+  var btn=$("btn-pipeline");
+  btn.textContent=labels[pipelineMode];
+  btn.classList.toggle("on",pipelineMode>0);
+  // reset animation phases on mode change so rings re-acquire cleanly
+  for(var k in animP)animP[k]=0;
+  for(var k in animPBG)animPBG[k]=0;
+});
+$("btn-figures").addEventListener("click",function(){showFigures=!showFigures;$("btn-figures").classList.toggle("on",showFigures);});
+$("btn-bgrings").addEventListener("click",function(){bgRings=!bgRings;$("btn-bgrings").classList.toggle("on",bgRings);if(!bgRings){for(var k in animPBG)delete animPBG[k];}});
+$("btn-demo").addEventListener("click",function(){demoOn=!demoOn;$("btn-demo").classList.toggle("on",demoOn);if(demoOn&&earthRot){earthRot=false;$("btn-rot").classList.remove("on");}});
+$("btn-rot").addEventListener("click",function(){earthRot=!earthRot;$("btn-rot").classList.toggle("on",earthRot);if(earthRot&&demoOn){demoOn=false;$("btn-demo").classList.remove("on");}});
+$("btn-reset").addEventListener("click",function(){
+  cam.ra=85;cam.dc=0;cam.roll=0;cam.fov=25;thresh=6;demoOn=false;earthRot=false;bgRings=false;showFigures=false;pipelineMode=3;exposure=50;gain=20;
+  if(skyMode){clearInterval(skyInterval);skyMode=false;}
+  skyMode=false;
+  $("sl-fov").value=25;$("sl-thr").value=6;$("sl-roll").value=0;$("sl-exp").value=50;$("sl-gain").value=20;
+  $("vl-fov").textContent="25°";$("vl-thr").textContent="6.0 mag";$("vl-roll").textContent="0.0°";$("vl-exp").textContent="50";$("vl-gain").textContent="20";$("fovlbl").textContent="FOV: 25.0°";
+  $("btn-demo").classList.remove("on");$("btn-rot").classList.remove("on");$("btn-figures").classList.remove("on");$("btn-bgrings").classList.remove("on");$("btn-sky").classList.remove("on");
+  $("sky-row").style.display="none";
+  $("btn-pipeline").textContent="MATCHING";$("btn-pipeline").classList.add("on");
+  $("star-popup").style.display="none";
+  for(var k in animP)delete animP[k];for(var k in animPBG)delete animPBG[k];
+});
+
+$("sl-exp").addEventListener("input",function(e){exposure=parseFloat(e.target.value);$("vl-exp").textContent=exposure;});
+$("sl-gain").addEventListener("input",function(e){gain=parseFloat(e.target.value);$("vl-gain").textContent=gain;});
+$("btn-exp-reset").addEventListener("click",function(){exposure=50;$("sl-exp").value=50;$("vl-exp").textContent="50";});
+$("btn-gain-reset").addEventListener("click",function(){gain=20;$("sl-gain").value=20;$("vl-gain").textContent="20";});
+
+// ── CITY DATABASE ──
+var CITIES=[
+  {n:"New York, NY",      lat:40.71, lon:-74.01},{n:"Los Angeles, CA",  lat:34.05, lon:-118.24},
+  {n:"Chicago, IL",       lat:41.88, lon:-87.63},{n:"Houston, TX",      lat:29.76, lon:-95.37},
+  {n:"Phoenix, AZ",       lat:33.45, lon:-112.07},{n:"Philadelphia, PA",lat:39.95, lon:-75.17},
+  {n:"San Antonio, TX",   lat:29.42, lon:-98.49},{n:"San Diego, CA",    lat:32.72, lon:-117.16},
+  {n:"Dallas, TX",        lat:32.78, lon:-96.80},{n:"San Jose, CA",     lat:37.34, lon:-121.89},
+  {n:"Austin, TX",        lat:30.27, lon:-97.74},{n:"Denver, CO",       lat:39.74, lon:-104.98},
+  {n:"Seattle, WA",       lat:47.61, lon:-122.33},{n:"Boston, MA",      lat:42.36, lon:-71.06},
+  {n:"Nashville, TN",     lat:36.17, lon:-86.78},{n:"Atlanta, GA",      lat:33.75, lon:-84.39},
+  {n:"Miami, FL",         lat:25.77, lon:-80.19},{n:"Minneapolis, MN",  lat:44.98, lon:-93.27},
+  {n:"Portland, OR",      lat:45.52, lon:-122.68},{n:"Las Vegas, NV",   lat:36.17, lon:-115.14},
+  {n:"Kansas City, MO",   lat:39.10, lon:-94.58},{n:"Tampa, FL",        lat:27.95, lon:-82.46},
+  {n:"New Orleans, LA",   lat:29.95, lon:-90.07},{n:"Washington, DC",   lat:38.91, lon:-77.04},
+  {n:"Indianapolis, IN",  lat:39.77, lon:-86.16},{n:"Columbus, OH",     lat:39.96, lon:-82.99},
+  {n:"Charlotte, NC",     lat:35.23, lon:-80.84},{n:"Tucson, AZ",       lat:32.22, lon:-110.93},
+  {n:"Albuquerque, NM",   lat:35.08, lon:-106.65},{n:"Salt Lake City, UT",lat:40.76,lon:-111.89},
+  {n:"Raleigh, NC",       lat:35.78, lon:-78.64},{n:"Memphis, TN",      lat:35.15, lon:-90.05},
+  {n:"Oklahoma City, OK", lat:35.47, lon:-97.52},{n:"Omaha, NE",        lat:41.26, lon:-95.94},
+  {n:"Colorado Springs, CO",lat:38.83,lon:-104.82},{n:"Sacramento, CA", lat:38.58, lon:-121.49},
+  {n:"Louisville, KY",    lat:38.25, lon:-85.76},{n:"Richmond, VA",     lat:37.54, lon:-77.43},
+  {n:"Anchorage, AK",     lat:61.22, lon:-149.90},{n:"Honolulu, HI",    lat:21.31, lon:-157.86},
+  {n:"London, UK",        lat:51.51, lon:-0.13},{n:"Paris, France",      lat:48.86, lon:2.35},
+  {n:"Tokyo, Japan",      lat:35.68, lon:139.69},{n:"Sydney, Australia", lat:-33.87,lon:151.21},
+  {n:"Toronto, Canada",   lat:43.65, lon:-79.38},{n:"Mexico City, Mexico",lat:19.43,lon:-99.13},
+  {n:"Sao Paulo, Brazil", lat:-23.55,lon:-46.63},{n:"Cape Town, S. Africa",lat:-33.93,lon:18.42},
+  {n:"Dubai, UAE",        lat:25.20, lon:55.27},{n:"Mumbai, India",      lat:19.08, lon:72.88}
+];
+
+// Populate city selector
+(function(){
+  var sel=$("sky-city");
+  CITIES.forEach(function(c,i){
+    var o=document.createElement("option");o.value=i;o.textContent=c.n;sel.appendChild(o);
+  });
+})();
+
+function getLST(lonDeg){
+  var now=new Date();
+  var JD=now.getTime()/86400000+2440587.5;
+  var T=(JD-2451545.0)/36525;
+  var GMST=280.46061837+360.98564736629*(JD-2451545.0)+0.000387933*T*T;
+  GMST=((GMST%360)+360)%360;
+  return((GMST+lonDeg)%360+360)%360;
+}
+
+function updateSkyDisplay(){
+  var city=CITIES[parseInt($("sky-city").value)];
+  var lst=getLST(city.lon);
+  var lstH=Math.floor(lst/15),lstM=Math.floor((lst%15)*4),lstS=Math.floor(((lst%15)*4%1)*60);
+  $("sky-lst").textContent="LST "+lstH+"h "+lstM+"m "+lstS+"s";
+  $("sky-info").textContent=city.lat.toFixed(1)+(city.lat>=0?"°N":"°S")+"  "+Math.abs(city.lon).toFixed(1)+(city.lon>=0?"°E":"°W");
+  skyLat=city.lat;skyLon=city.lon;
+}
+
+$("btn-sky").addEventListener("click",function(){
+  skyMode=!skyMode;
+  $("btn-sky").classList.toggle("on",skyMode);
+  var row=$("sky-row");
+  row.style.display=skyMode?"flex":"none";
+  if(skyMode){
+    updateSkyDisplay();
+    if(demoOn){demoOn=false;$("btn-demo").classList.remove("on");}
+    if(earthRot){earthRot=false;$("btn-rot").classList.remove("on");}
+    skyInterval=setInterval(updateSkyDisplay,1000);
+  } else {
+    clearInterval(skyInterval);
+  }
+});
+$("sky-city").addEventListener("change",updateSkyDisplay);
+$("btn-zenith").addEventListener("click",function(){
+  if(!skyMode)return;
+  var lst=getLST(skyLon);
+  gotoConst(lst,skyLat,25);
+});
+$("btn-mer-s").addEventListener("click",function(){
+  if(!skyMode)return;
+  var lst=getLST(skyLon);
+  gotoConst(lst,Math.max(-85,skyLat-45),22);
+});
+
+// Live sky: update cam.ra with sidereal drift when active
+(function(){
+  var _origLoop=loop;
+})();
+
+// ── METEOR DEFENSE GAME ──────────────────────────────────────────
+var gameActive=false,gameScore=0,gameLevel=1,gameLives=3,gameCombo=0;
+var gameObjects=[],gameSpawnTimer=0;
+var gameSpawnInterval=120,gameMeteorSpeed=0.4,gameMaxObjects=6;
+var lasers=[],particles=[];
+var gameNameEntry=false,gameName=["A","A","A"],gameNameCursor=0;
+var gameShake=0,gameShakeX=0,gameShakeY=0;
+
+// Object types: meteor, satellite, ufo, arm, junk
+var OBJ_TYPES=[
+  {type:"meteor",   threat:true,  pts:20,  spawnWeight:22},
+  {type:"meteor",   threat:true,  pts:10,  spawnWeight:16, big:true},
+  {type:"satellite",threat:false, pts:-30, spawnWeight:24},
+  {type:"ufo",      threat:true,  pts:150, spawnWeight:18},
+  {type:"arm",      threat:true,  pts:35,  spawnWeight:24},
+  {type:"junk",     threat:true,  pts:15,  spawnWeight:16}
+];
+
+// Leaderboard
+var gameLeaderboard=[];
+async function loadLeaderboard(){
+  try{
+    var r=await window.storage.get("nova-leaderboard");
+    if(r)gameLeaderboard=JSON.parse(r.value);
+  }catch(e){gameLeaderboard=[];}
+  renderLeaderboard();
+}
+async function saveLeaderboard(){
+  try{await window.storage.set("nova-leaderboard",JSON.stringify(gameLeaderboard));}catch(e){}
+}
+function addScore(name,score,level){
+  gameLeaderboard.push({name:name.toUpperCase(),score:score,level:level});
+  gameLeaderboard.sort(function(a,b){return b.score-a.score;});
+  if(gameLeaderboard.length>10)gameLeaderboard.length=10;
+  saveLeaderboard();renderLeaderboard();
+}
+function renderLeaderboard(){
+  var el=$("game-leaderboard");if(!el)return;
+  if(!gameLeaderboard.length){el.innerHTML='<div style="color:#3d6880;font-size:9px;text-align:center;padding:4px">NO SCORES YET</div>';return;}
+  el.innerHTML=gameLeaderboard.slice(0,10).map(function(e,i){
+    return '<div style="display:flex;gap:8px;justify-content:space-between;padding:1px 0;font-size:9px">'
+      +'<span style="color:#527a96">'+(i+1)+'.</span>'
+      +'<span style="color:#00d4ff;letter-spacing:2px">'+e.name+'</span>'
+      +'<span style="color:#ffaa00;flex:1;text-align:right">'+e.score+'</span>'
+      +'<span style="color:#3d6880">LV'+e.level+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function spawnEdge(spd){
+  var W2=cvs.width,H2=cvs.height;
+  var edge=Math.floor(Math.random()*4),x,y,vx,vy;
+  var ang=Math.random()*Math.PI*0.5-Math.PI*0.25;
+  if(edge===0){x=Math.random()*W2;y=-20;vx=Math.sin(ang)*spd;vy=Math.abs(Math.cos(ang))*spd;}
+  else if(edge===1){x=W2+20;y=Math.random()*H2;vx=-Math.abs(Math.cos(ang))*spd;vy=Math.sin(ang)*spd;}
+  else if(edge===2){x=Math.random()*W2;y=H2+20;vx=Math.sin(ang)*spd;vy=-Math.abs(Math.cos(ang))*spd;}
+  else{x=-20;y=Math.random()*H2;vx=Math.abs(Math.cos(ang))*spd;vy=Math.sin(ang)*spd;}
+  return{x:x,y:y,vx:vx,vy:vy};
+}
+
+function spawnObject(){
+  var spd=(gameMeteorSpeed+Math.random()*0.3)*(1+gameLevel*0.08);
+  // weighted random type
+  var totalW=0,cum=[];OBJ_TYPES.forEach(function(t){totalW+=t.spawnWeight;cum.push(totalW);});
+  var r2=Math.random()*totalW,ti=0;
+  for(var i=0;i<cum.length;i++){if(r2<cum[i]){ti=i;break;}}
+  var tpl=OBJ_TYPES[ti];
+  var e=spawnEdge(spd);
+  var obj={type:tpl.type,threat:tpl.threat,pts:tpl.pts,
+    x:e.x,y:e.y,vx:e.vx,vy:e.vy,
+    hit:false,hitAnim:0,missed:false,trail:[],angle:Math.random()*Math.PI*2,spin:0};
+
+  if(tpl.type==="meteor"){
+    obj.size=tpl.tiny?3+Math.random()*3:tpl.big?10+Math.random()*6:6+Math.random()*5;
+    obj.life=Math.floor(180+obj.size*20+Math.random()*60);
+    obj.maxLife=obj.life;obj.pts=tpl.pts;
+  } else if(tpl.type==="ufo"){
+    obj.size=7;obj.life=200;obj.maxLife=200;
+    obj.zigTimer=0;obj.zigInterval=18+Math.floor(Math.random()*18);
+    obj.spin=0.06;
+    // UFOs spawn faster
+    obj.vx*=1.6;obj.vy*=1.6;
+  } else if(tpl.type==="satellite"){
+    obj.size=10;obj.life=300;obj.maxLife=300;obj.spin=0.015;
+  } else if(tpl.type==="arm"){
+    obj.size=10;obj.life=240;obj.maxLife=240;obj.spin=0.05+Math.random()*0.04;
+  } else if(tpl.type==="junk"){
+    obj.size=13;obj.life=280;obj.maxLife=280;
+    obj.spin=0.02+Math.random()*0.03;
+    obj.sides=Math.floor(Math.random()*3)+5;
+  }
+  gameObjects.push(obj);
+}
+
+function fireLaser(fromX,fromY,toX,toY,col){
+  lasers.push({x0:fromX,y0:fromY,x1:toX,y1:toY,life:14,maxLife:14,col:col||"#00ffaa"});
+}
+
+function spawnParticles(x,y,col,n){
+  for(var i=0;i<(n||12);i++){
+    var a=Math.random()*Math.PI*2,spd=1+Math.random()*3;
+    particles.push({x:x,y:y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+      life:20+Math.floor(Math.random()*15),maxLife:35,col:col||"#ffaa00",size:1+Math.random()*2});
+  }
+}
+
+function startMeteorGame(){
+  gameActive=true;gameScore=0;gameLevel=1;gameLives=3;gameCombo=0;
+  gameObjects=[];lasers=[];particles=[];gameSpawnTimer=0;
+  gameSpawnInterval=120;gameMeteorSpeed=0.4;gameMaxObjects=6;
+  gameNameEntry=false;gameName=["A","A","A"];gameNameCursor=0;
+  // switch to RAW FEED, no BG rings
+  pipelineMode=0;bgRings=false;
+  $("btn-pipeline").textContent="RAW FEED";$("btn-pipeline").classList.remove("on");
+  $("btn-bgrings").classList.remove("on");
+  $("game-score").textContent="0";
+  $("game-level").textContent="1";
+  $("game-lives-icons").textContent="⬡⬡⬡";
+  $("game-lives-icons").style.color="#00e87a";
+  $("game-combo").textContent="";
+  $("game-screen").style.display="none";
+  $("game-over-continue").style.display="none";
+  $("wrap").style.cursor="crosshair";
+}
+
+function exitMeteorGame(){
+  gameActive=false;gameNameEntry=false;gameObjects=[];lasers=[];particles=[];
+  cinematicActive=false;gameOverHold=false;
+  $("game-over-continue").style.display="none";
+  // restore pipeline + BG rings
+  pipelineMode=3;bgRings=true;
+  $("btn-pipeline").textContent="MATCHING";$("btn-pipeline").classList.add("on");
+  $("btn-bgrings").classList.add("on");
+  $("meteor-overlay").style.display="none";
+  $("wrap").style.cursor="";
+  $("btn-meteor").classList.remove("on");
+}
+
+function triggerShake(){gameShake=14;}
+
+function loseLive(obj){
+  var killerType=obj?obj.type:"meteor";
+  var killerX=obj?obj.x:W/2,killerY=obj?obj.y:H/2;
+  if(obj)gameObjects.splice(gameObjects.indexOf(obj),1);
+  gameLives--;gameCombo=0;$("game-combo").textContent="";
+  triggerShake();
+  var icons=["","⬡","⬡⬡","⬡⬡⬡"];
+  $("game-lives-icons").textContent=gameLives>0?icons[Math.min(gameLives,3)]:"";
+  $("game-lives-icons").style.color=gameLives===1?"#ff4040":gameLives===2?"#ffaa00":"#00e87a";
+  if(gameLives<=0)endMeteorGame(killerType,killerX,killerY);
+}
+
+function updateGame(){
+  var W2=cvs.width,H2=cvs.height;
+  // spawn
+  gameSpawnTimer++;
+  if(gameSpawnTimer>=gameSpawnInterval&&gameObjects.filter(function(o){return!o.hit;}).length<gameMaxObjects){
+    spawnObject();gameSpawnTimer=0;
+    gameSpawnInterval=Math.max(30,120-gameLevel*8);
+  }
+  // update objects
+  for(var i=gameObjects.length-1;i>=0;i--){
+    var m=gameObjects[i];
+    if(m.hit){m.hitAnim++;if(m.hitAnim>22)gameObjects.splice(i,1);continue;}
+    m.trail.push({x:m.x,y:m.y});if(m.trail.length>10)m.trail.shift();
+    m.angle+=m.spin||0;
+    // UFO zigzag
+    if(m.type==="ufo"){
+      m.zigTimer++;
+      if(m.zigTimer>=m.zigInterval){
+        m.vx+=(Math.random()-0.5)*2.4;m.vy+=(Math.random()-0.5)*2.4;
+        var spd2=Math.sqrt(m.vx*m.vx+m.vy*m.vy);
+        if(spd2>2.8){m.vx=m.vx/spd2*2.8;m.vy=m.vy/spd2*2.8;}
+        m.zigInterval=14+Math.floor(Math.random()*16);
+        m.zigTimer=0;
+      }
+    }
+    m.x+=m.vx;m.y+=m.vy;m.life--;
+    var oob=m.x<-40||m.x>W2+40||m.y<-40||m.y>H2+40;
+    if(m.life<=0||oob){
+      if(m.threat&&!oob)loseLive(m); // only lose life if it saturated in-frame
+      else gameObjects.splice(i,1);
+      if(gameLives<=0)return;
+    }
+  }
+  // update lasers
+  for(var i=lasers.length-1;i>=0;i--){lasers[i].life--;if(lasers[i].life<=0)lasers.splice(i,1);}
+  // update particles
+  for(var i=particles.length-1;i>=0;i--){
+    var p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=0.92;p.vy*=0.92;p.life--;
+    if(p.life<=0)particles.splice(i,1);
+  }
+  // level up
+  var nl=1+Math.floor(gameScore/600);
+  if(nl!==gameLevel){gameLevel=nl;gameMeteorSpeed=0.4+gameLevel*0.08;gameMaxObjects=Math.min(14,6+gameLevel);$("game-level").textContent=gameLevel;}
+}
+
+function drawGameObjects(){
+  // lasers (drawn under objects)
+  for(var i=0;i<lasers.length;i++){
+    var l=lasers[i],prog=1-l.life/l.maxLife;
+    var a=l.life/l.maxLife;
+    // outer glow
+    ctx.beginPath();ctx.moveTo(l.x0,l.y0);ctx.lineTo(l.x1,l.y1);
+    ctx.strokeStyle="rgba(0,255,170,"+(a*0.3)+")";ctx.lineWidth=8;ctx.stroke();
+    // core beam
+    ctx.beginPath();ctx.moveTo(l.x0,l.y0);ctx.lineTo(l.x1,l.y1);
+    ctx.strokeStyle="rgba(200,255,230,"+a+")";ctx.lineWidth=1.5;ctx.stroke();
+    // bright tip flash
+    if(l.life>l.maxLife*0.7){
+      ctx.beginPath();ctx.arc(l.x1,l.y1,6*(1-prog*1.4),0,Math.PI*2);
+      ctx.fillStyle="rgba(255,255,255,"+(a*0.8)+")";ctx.fill();
+    }
+  }
+  // particles
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i],a=p.life/p.maxLife;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size*a,0,Math.PI*2);
+    ctx.fillStyle="rgba("+p.col+","+a+")";ctx.fill();
+  }
+  // game objects
+  for(var i=0;i<gameObjects.length;i++){
+    var m=gameObjects[i];
+    var satPct=1-(m.life/m.maxLife);
+    if(m.hit){
+      var prog=m.hitAnim/22;
+      var er=m.size*(1+prog*5);
+      ctx.beginPath();ctx.arc(m.x,m.y,er,0,Math.PI*2);
+      ctx.strokeStyle="rgba(0,255,170,"+(1-prog)+")";ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.arc(m.x,m.y,er*0.4,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,200,"+(0.9-prog)+")";ctx.lineWidth=1;ctx.stroke();
+      continue;
+    }
+    ctx.save();ctx.translate(m.x,m.y);ctx.rotate(m.angle);
+
+    if(m.type==="meteor"){
+      var r=Math.floor(200+satPct*55),g=Math.floor(100-satPct*80),b=30;
+      // trail
+      ctx.restore();
+      for(var j=0;j<m.trail.length;j++){
+        ctx.beginPath();ctx.arc(m.trail[j].x,m.trail[j].y,m.size*(j/m.trail.length)*0.5,0,Math.PI*2);
+        ctx.fillStyle="rgba("+r+","+g+","+b+","+(j/m.trail.length)*0.3+")";ctx.fill();
+      }
+      ctx.save();ctx.translate(m.x,m.y);
+      // bloom
+      var bloomR=m.size*(1.5+satPct*3);
+      var bg=ctx.createRadialGradient(0,0,0,0,0,bloomR);
+      bg.addColorStop(0,"rgba("+r+","+g+","+b+","+(0.2+satPct*0.3)+")");bg.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.beginPath();ctx.arc(0,0,bloomR,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
+      // core
+      ctx.beginPath();ctx.arc(0,0,m.size,0,Math.PI*2);ctx.fillStyle="rgba("+r+","+g+","+b+",0.95)";ctx.fill();
+      if(satPct>0.5){var pulse=0.5+0.5*Math.sin(frame*0.3);ctx.beginPath();ctx.arc(0,0,m.size+3,0,Math.PI*2);ctx.strokeStyle="rgba(255,80,0,"+(pulse*(satPct-0.5)*2)+")";ctx.lineWidth=1.5;ctx.stroke();}
+      ctx.beginPath();ctx.arc(0,0,m.size+5,-Math.PI/2,-Math.PI/2+Math.PI*2*(m.life/m.maxLife));ctx.strokeStyle="rgba(255,200,100,0.3)";ctx.lineWidth=1;ctx.stroke();
+
+    } else if(m.type==="ufo"){
+      // saucer body
+      ctx.beginPath();ctx.ellipse(0,0,m.size*1.4,m.size*0.5,0,0,Math.PI*2);
+      ctx.fillStyle="rgba(60,220,80,0.85)";ctx.fill();
+      ctx.strokeStyle="rgba(120,255,120,0.8)";ctx.lineWidth=1;ctx.stroke();
+      // dome
+      ctx.beginPath();ctx.ellipse(0,-m.size*0.3,m.size*0.7,m.size*0.5,0,Math.PI,0);
+      ctx.fillStyle="rgba(140,255,160,0.7)";ctx.fill();
+      // lights
+      for(var k=-1;k<=1;k++){
+        ctx.beginPath();ctx.arc(k*m.size*0.6,m.size*0.1,2,0,Math.PI*2);
+        ctx.fillStyle=(frame+k*7)%20<10?"rgba(255,255,0,0.9)":"rgba(255,100,0,0.9)";ctx.fill();
+      }
+      // green glow
+      var ug=ctx.createRadialGradient(0,0,0,0,0,m.size*2.5);
+      ug.addColorStop(0,"rgba(50,220,80,0.12)");ug.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.beginPath();ctx.arc(0,0,m.size*2.5,0,Math.PI*2);ctx.fillStyle=ug;ctx.fill();
+
+    } else if(m.type==="satellite"){
+      // body box
+      ctx.fillStyle="rgba(120,160,220,0.8)";ctx.fillRect(-m.size*0.5,-m.size*0.4,m.size,m.size*0.8);
+      ctx.strokeStyle="rgba(160,200,255,0.7)";ctx.lineWidth=0.8;ctx.strokeRect(-m.size*0.5,-m.size*0.4,m.size,m.size*0.8);
+      // solar panels
+      ctx.fillStyle="rgba(30,80,180,0.85)";
+      ctx.fillRect(-m.size*1.5,-m.size*0.25,m.size*0.8,m.size*0.5);
+      ctx.fillRect(m.size*0.7,-m.size*0.25,m.size*0.8,m.size*0.5);
+      ctx.strokeStyle="rgba(80,160,255,0.5)";ctx.lineWidth=0.5;
+      ctx.strokeRect(-m.size*1.5,-m.size*0.25,m.size*0.8,m.size*0.5);
+      ctx.strokeRect(m.size*0.7,-m.size*0.25,m.size*0.8,m.size*0.5);
+      // "FRIENDLY" label
+      ctx.rotate(-m.angle);ctx.font='7px "Share Tech Mono",monospace';
+      ctx.fillStyle="rgba(0,255,100,0.8)";ctx.textAlign="center";
+      ctx.fillText("FRIENDLY",0,m.size*1.2);ctx.textAlign="left";ctx.rotate(m.angle);
+
+    } else if(m.type==="arm"){
+      // L-shaped robotic arm
+      ctx.strokeStyle="rgba(200,180,140,0.9)";ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(-m.size*0.8,0);ctx.lineTo(m.size*0.6,0);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(m.size*0.6,0);ctx.lineTo(m.size*0.6,m.size*0.9);ctx.stroke();
+      // joints
+      ctx.fillStyle="rgba(220,200,160,0.9)";
+      ctx.beginPath();ctx.arc(-m.size*0.8,0,3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(m.size*0.6,0,4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(m.size*0.6,m.size*0.9,3,0,Math.PI*2);ctx.fill();
+      // claw
+      ctx.strokeStyle="rgba(200,180,140,0.8)";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(m.size*0.6,m.size*0.9);ctx.lineTo(m.size*0.3,m.size*1.2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(m.size*0.6,m.size*0.9);ctx.lineTo(m.size*0.9,m.size*1.2);ctx.stroke();
+
+    } else if(m.type==="junk"){
+      // irregular polygon
+      ctx.beginPath();
+      var sides=m.sides||6;
+      for(var k=0;k<sides;k++){
+        var a2=(k/sides)*Math.PI*2,r2=m.size*(0.6+Math.sin(k*2.3+m.maxLife*0.01)*0.4);
+        if(k===0)ctx.moveTo(Math.cos(a2)*r2,Math.sin(a2)*r2);
+        else ctx.lineTo(Math.cos(a2)*r2,Math.sin(a2)*r2);
+      }
+      ctx.closePath();
+      ctx.fillStyle="rgba(160,140,120,"+(0.6+satPct*0.3)+")";ctx.fill();
+      ctx.strokeStyle="rgba(200,180,160,0.7)";ctx.lineWidth=1;ctx.stroke();
+    }
+    ctx.restore();
+    // countdown ring for all threats (non-meteor drawn separately above for meteor)
+    if(m.threat && m.type!=="meteor" && !m.hit){
+      var satPct2=1-(m.life/m.maxLife);
+      var ringR=m.size+6;
+      ctx.beginPath();
+      ctx.arc(m.x,m.y,ringR,-Math.PI/2,-Math.PI/2+Math.PI*2*(m.life/m.maxLife));
+      var ringCol=m.type==="ufo"?"rgba(80,255,80,0.5)":m.type==="arm"?"rgba(200,160,100,0.45)":"rgba(180,160,130,0.4)";
+      ctx.strokeStyle=ringCol;ctx.lineWidth=1.2;ctx.stroke();
+      if(satPct2>0.5){
+        var pulse=0.5+0.5*Math.sin(frame*0.35);
+        ctx.beginPath();ctx.arc(m.x,m.y,ringR+3,0,Math.PI*2);
+        ctx.strokeStyle="rgba(255,80,0,"+(pulse*(satPct2-0.5)*2)+")";
+        ctx.lineWidth=1.2;ctx.stroke();
+      }
+    }
+    // friendly satellite pulse warning (green ring, not red)
+    if(m.type==="satellite"&&!m.hit){
+      var pulse2=0.4+0.4*Math.sin(frame*0.15);
+      ctx.beginPath();ctx.arc(m.x,m.y,m.size*2.2,0,Math.PI*2);
+      ctx.strokeStyle="rgba(0,255,100,"+(pulse2*0.3)+")";ctx.lineWidth=1;ctx.stroke();
+    }
+  }
+}
+
+function handleMeteorClick(px,py){
+  if(!gameActive||gameNameEntry)return;
+  var W2=cvs.offsetWidth||cvs.width,H2=cvs.offsetHeight||cvs.height;
+  var cx2=(px/W2)*cvs.width,cy2=(py/H2)*cvs.height;
+  var gunX=cvs.width/2,gunY=cvs.height/2;
+  for(var i=gameObjects.length-1;i>=0;i--){
+    var m=gameObjects[i];if(m.hit)continue;
+    var dx=cx2-m.x,dy=cy2-m.y;
+    var clickR=Math.max(m.size+10,18);
+    if(dx*dx+dy*dy<clickR*clickR){
+      fireLaser(gunX,gunY,m.x,m.y,m.type==="ufo"?"0,255,120":"0,255,180");
+      spawnParticles(m.x,m.y,m.type==="ufo"?"80,255,100,":"255,180,50,",14);
+      m.hit=true;m.hitAnim=0;
+      if(!m.threat){
+        // satellite shoots back — laser from sat to gun center
+        fireLaser(m.x,m.y,cvs.width/2,cvs.height/2,"255,80,80");
+        spawnParticles(cvs.width/2,cvs.height/2,"255,60,60,",10);
+        gameLives--;gameCombo=0;$("game-combo").textContent="FRIENDLY FIRE! -LIFE";
+        triggerShake();
+        var icons=["","⬡","⬡⬡","⬡⬡⬡"];
+        $("game-lives-icons").textContent=gameLives>0?icons[Math.min(gameLives,3)]:"";
+        $("game-lives-icons").style.color=gameLives===1?"#ff4040":gameLives===2?"#ffaa00":"#00e87a";
+        if(gameLives<=0){endMeteorGame("satellite",m.x,m.y);return;}
+        m.hit=true;m.hitAnim=0;
+      } else {
+        gameCombo++;
+        var mul=gameCombo>2?Math.min(gameCombo,5):1;
+        var pts=m.pts*mul;
+        gameScore+=pts;$("game-score").textContent=gameScore;
+        $("game-combo").textContent=gameCombo>1?"COMBO x"+gameCombo+" +"+pts:"+"+pts;
+      }
+      return;
+    }
+  }
+}
+
+function nameNav(d){gameNameCursor=(gameNameCursor+3+d)%3;updateNameDisplay();}
+function nameLetter(d){
+  var code=gameName[gameNameCursor].charCodeAt(0)+d;
+  if(code<65)code=90;if(code>90)code=65;
+  gameName[gameNameCursor]=String.fromCharCode(code);updateNameDisplay();
+}
+
+// ── GAME OVER CINEMATIC ──────────────────────────────────────────
+var cinematicActive=false,cinematicFrame=0,cinematicType=null;
+var cinematicSrcX=0,cinematicSrcY=0,cinematicDuration=170;
+var gameOverHold=false,gameOverHoldFrame=0,gameOverHoldDuration=165;
+
+function endMeteorGame(killerType,killerX,killerY){
+  gameActive=false;gameObjects=[];lasers=[];particles=[];
+  $("wrap").style.cursor="";
+  cinematicType=killerType||"meteor";
+  cinematicSrcX=killerX||W/2;cinematicSrcY=killerY||H/2;
+  cinematicFrame=0;cinematicActive=true;
+  $("game-combo").textContent="";
+}
+
+function showGameOverScreen(){
+  cinematicActive=false;gameOverHold=false;
+  $("game-over-continue").style.display="none";
+  gameNameEntry=true;gameName=["A","A","A"];gameNameCursor=0;
+  $("game-screen").style.display="flex";
+  $("game-final-score").style.display="block";
+  $("game-final-score").textContent="SCORE: "+gameScore+" · LEVEL "+gameLevel;
+  $("game-start-btn").textContent="PLAY AGAIN";
+  $("game-name-entry").style.display="block";
+  $("game-reset-btn-wrap").style.display="block";
+  updateNameDisplay();
+}
+
+function drawGameOverHold(){
+  if(gameOverHoldFrame<gameOverHoldDuration) gameOverHoldFrame++;
+  var prog=Math.min(1,gameOverHoldFrame/gameOverHoldDuration); // CAPPED at 1 — no growth past full
+  var cx=W/2,cy=H/2;
+
+  ctx.fillStyle="rgba(4,0,0,"+Math.min(0.92,prog*2)+")";ctx.fillRect(0,0,W,H);
+  if(gameOverHoldFrame<60&&Math.floor(gameOverHoldFrame/5)%2===0){
+    ctx.fillStyle="rgba(180,0,0,0.15)";ctx.fillRect(0,0,W,H);
+  }
+
+  var textAlpha=Math.min(1,prog*3);
+  ctx.save();ctx.textAlign="center";
+
+  // GAME OVER — fixed size, no growth
+  ctx.font='bold 40px "Share Tech Mono",monospace';
+  ctx.fillStyle="rgba(255,30,30,"+textAlpha+")";
+  ctx.fillText("GAME OVER",cx,cy-52);
+
+  // fun killer headline + subtitle
+  var msgs={
+    meteor:{
+      line1:"A METEOR TOOK OUT YOUR SENSOR",
+      line2:"DETECTION LOST — THE STARS WIN THIS ROUND"
+    },
+    ufo:{
+      line1:"ALIEN BEAM FRIED YOUR DETECTOR",
+      line2:"STAR TRACKER OFFLINE — THEY REALLY DIDN'T WANT TO BE FOUND"
+    },
+    satellite:{
+      line1:"YOU SHOT THE FRIENDLY SATELLITE",
+      line2:"MISSION CONTROL IS NOT HAPPY — COURT MARTIAL PENDING"
+    },
+    arm:{
+      line1:"A ROBOTIC ARM DECIDED YOUR LENS WAS IN THE WAY",
+      line2:"DETECTION LOST — SHOULD'VE MOVED"
+    },
+    junk:{
+      line1:"SPACE DEBRIS ENDED YOUR MISSION",
+      line2:"THE STAR TRACKER DOESN'T RUN ON DENTED HARDWARE"
+    }
+  }[cinematicType]||{line1:"SENSOR COMPROMISED",line2:"DETECTION LOST"};
+
+  ctx.font='bold 14px "Share Tech Mono",monospace';
+  ctx.fillStyle="rgba(255,110,110,"+Math.min(1,textAlpha*1.2)+")";
+  ctx.fillText(msgs.line1,cx,cy-12);
+
+  ctx.font='11px "Share Tech Mono",monospace';
+  ctx.fillStyle="rgba(200,80,80,"+Math.min(1,textAlpha)+")";
+  ctx.fillText(msgs.line2,cx,cy+12);
+
+  if(prog>0.3){
+    ctx.font='12px "Share Tech Mono",monospace';
+    ctx.fillStyle="rgba(160,90,90,"+Math.min(1,(prog-0.3)*2)+")";
+    ctx.fillText("FINAL SCORE: "+gameScore+"   ·   LEVEL "+gameLevel,cx,cy+42);
+  }
+  if(prog>0.55){
+    ctx.font='9px "Share Tech Mono",monospace';
+    ctx.fillStyle="rgba(120,55,55,"+Math.min(0.75,(prog-0.55)*2)+")";
+    ctx.fillText("ATTITUDE LOCK LOST — DETECTOR COMPROMISED",cx,cy+64);
+  }
+  ctx.textAlign="left";ctx.restore();
+
+  if(gameOverHoldFrame>=gameOverHoldDuration){
+    $("game-over-continue").style.display="block";
+    return;
+  }
+  $("game-over-continue").style.display="none";
+}
+
+function drawCinematic(){
+  cinematicFrame++;
+  if(cinematicFrame>cinematicDuration){
+    cinematicActive=false;gameOverHold=true;gameOverHoldFrame=0;
+    return;
+  }
+
+  var prog=cinematicFrame/cinematicDuration;
+  var cx=W/2,cy=H/2;
+
+  // PHASE helpers — everything uses normalised 0-1 sub-progress
+  function phase(start,end){return Math.max(0,Math.min(1,(prog-start)/(end-start)));}
+  function easeOut(t){return 1-(1-t)*(1-t);}
+  function easeIn(t){return t*t;}
+
+  // ── dark overlay grows in ──
+  ctx.fillStyle="rgba(0,0,0,"+Math.min(0.78,prog*1.5)+")";
+  ctx.fillRect(0,0,W,H);
+
+  // ── shared: object flies from spawn to centre ──
+  // p_fly: 0→1 over first 45% of cinematic
+  var p_fly=easeOut(phase(0,0.45));
+  var ox=cinematicSrcX+(cx-cinematicSrcX)*p_fly;
+  var oy=cinematicSrcY+(cy-cinematicSrcY)*p_fly;
+
+  if(cinematicType==="ufo"){
+    // fly-in size 7→90
+    var size=7+easeOut(prog)*83;
+    ctx.save();ctx.translate(ox,oy);ctx.rotate(prog*Math.PI*4);
+    // saucer body
+    ctx.beginPath();ctx.ellipse(0,0,size*1.4,size*0.5,0,0,Math.PI*2);
+    ctx.fillStyle="rgba(40,200,60,0.92)";ctx.fill();
+    ctx.strokeStyle="rgba(120,255,120,0.8)";ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.ellipse(0,-size*0.32,size*0.7,size*0.56,0,Math.PI,0);
+    ctx.fillStyle="rgba(140,255,160,0.85)";ctx.fill();
+    for(var k=-2;k<=2;k++){
+      ctx.beginPath();ctx.arc(k*size*0.52,size*0.12,Math.max(2,size*0.08),0,Math.PI*2);
+      ctx.fillStyle=(cinematicFrame+k*7)%14<7?"rgba(255,255,0,0.95)":"rgba(255,100,0,0.95)";ctx.fill();
+    }
+    ctx.restore();
+    // green halo
+    var gg=ctx.createRadialGradient(ox,oy,0,ox,oy,size*3);
+    gg.addColorStop(0,"rgba(50,220,80,"+Math.min(0.28,prog*0.35)+")");gg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.beginPath();ctx.arc(ox,oy,size*3,0,Math.PI*2);ctx.fillStyle=gg;ctx.fill();
+    // beam: fires once at centre (phase 0.48-0.82)
+    var p_beam=phase(0.48,0.82);
+    if(p_beam>0){
+      var bw=size*0.5*easeIn(p_beam);
+      ctx.beginPath();
+      ctx.moveTo(ox-bw,oy+size*0.4);ctx.lineTo(ox+bw,oy+size*0.4);
+      ctx.lineTo(cx+bw*0.2,cy);ctx.lineTo(cx-bw*0.2,cy);ctx.closePath();
+      var bg2=ctx.createLinearGradient(ox,oy,cx,cy);
+      bg2.addColorStop(0,"rgba(120,255,100,"+p_beam*0.85+")");bg2.addColorStop(1,"rgba(0,200,60,0)");
+      ctx.fillStyle=bg2;ctx.fill();
+      ctx.beginPath();ctx.moveTo(ox,oy+size*0.4);ctx.lineTo(cx,cy);
+      ctx.strokeStyle="rgba(200,255,180,"+p_beam*0.9+")";ctx.lineWidth=4*p_beam;ctx.stroke();
+      // impact flash
+      var p_imp=phase(0.62,0.82);
+      if(p_imp>0){
+        ctx.beginPath();ctx.arc(cx,cy,50*p_imp,0,Math.PI*2);
+        ctx.fillStyle="rgba(100,255,80,"+p_imp*0.55+")";ctx.fill();
+      }
+    }
+
+  } else if(cinematicType==="meteor"){
+    var size=8+easeOut(prog)*80;
+    var satP=prog;
+    var r=Math.floor(200+satP*55),g2=Math.floor(Math.max(0,100-satP*80)),b2=30;
+    // fire trail behind movement
+    for(var j=0;j<14;j++){
+      var tf=(1-(j+1)/14);
+      var tx=ox-(cx-cinematicSrcX)*j*0.04*(1-p_fly+0.1);
+      var ty=oy-(cy-cinematicSrcY)*j*0.04*(1-p_fly+0.1);
+      ctx.beginPath();ctx.arc(tx,ty,size*(j/14)*0.65,0,Math.PI*2);
+      ctx.fillStyle="rgba("+r+","+g2+","+b2+","+(tf*0.5*prog)+")";ctx.fill();
+    }
+    // bloom
+    var bloom=ctx.createRadialGradient(ox,oy,0,ox,oy,size*2.5);
+    bloom.addColorStop(0,"rgba("+r+","+g2+","+b2+","+(0.25+prog*0.45)+")");bloom.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.beginPath();ctx.arc(ox,oy,size*2.5,0,Math.PI*2);ctx.fillStyle=bloom;ctx.fill();
+    // core
+    ctx.beginPath();ctx.arc(ox,oy,size,0,Math.PI*2);
+    ctx.fillStyle="rgba("+r+","+g2+","+b2+",0.97)";ctx.fill();
+    // impact (phase 0.65-1.0)
+    var p_imp=phase(0.65,1.0);
+    if(p_imp>0){
+      var er=size*(1+p_imp*5);
+      ctx.beginPath();ctx.arc(cx,cy,er,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,160,0,"+(1-p_imp)*0.9+")";ctx.lineWidth=3+p_imp*5;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,er*0.45,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,200,"+(0.8-p_imp*0.8)+")";ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,er*1.6*p_imp,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,100,0,"+(0.4-p_imp*0.4)+")";ctx.lineWidth=1;ctx.stroke();
+      if(p_imp>0.5){ctx.fillStyle="rgba(255,120,0,"+(p_imp-0.5)*0.6+")";ctx.fillRect(0,0,W,H);}
+    }
+
+  } else if(cinematicType==="satellite"){
+    var size=10+easeOut(prog)*65;
+    ctx.save();ctx.translate(ox,oy);ctx.rotate(prog*Math.PI*2.5);
+    ctx.fillStyle="rgba(120,160,220,0.92)";ctx.fillRect(-size*0.5,-size*0.4,size,size*0.8);
+    ctx.strokeStyle="rgba(200,230,255,0.8)";ctx.lineWidth=1.5;ctx.strokeRect(-size*0.5,-size*0.4,size,size*0.8);
+    ctx.fillStyle="rgba(30,80,200,0.9)";
+    ctx.fillRect(-size*1.5,-size*0.25,size*0.8,size*0.5);
+    ctx.fillRect(size*0.7,-size*0.25,size*0.8,size*0.5);
+    ctx.strokeStyle="rgba(100,160,255,0.5)";ctx.lineWidth=0.8;
+    ctx.strokeRect(-size*1.5,-size*0.25,size*0.8,size*0.5);
+    ctx.strokeRect(size*0.7,-size*0.25,size*0.8,size*0.5);
+    ctx.restore();
+    // laser (phase 0.45-0.88)
+    var p_laser=phase(0.45,0.88);
+    if(p_laser>0){
+      ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(cx,cy);
+      ctx.strokeStyle="rgba(255,80,40,"+p_laser*0.9+")";ctx.lineWidth=10*p_laser;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(cx,cy);
+      ctx.strokeStyle="rgba(255,210,190,"+p_laser*0.75+")";ctx.lineWidth=3*p_laser;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,35*p_laser,0,Math.PI*2);
+      ctx.fillStyle="rgba(255,60,40,"+p_laser*0.55+")";ctx.fill();
+      if(p_laser>0.75){ctx.fillStyle="rgba(255,40,20,"+(p_laser-0.75)*1.4+")";ctx.fillRect(0,0,W,H);}
+    }
+
+  } else if(cinematicType==="arm"){
+    var size=10+easeOut(prog)*85;
+    // PHASE 1 (0-0.42): arm flies in from spawn to centre
+    // PHASE 2 (0.42-0.85): arm swings dramatically at centre — pendulum
+    // PHASE 3 (0.85+): sparks + flash
+    var p_swing=phase(0.42,0.85);
+    var swingAng;
+    if(p_swing===0){
+      // flying in — arm points in direction of travel
+      swingAng=Math.atan2(cy-cinematicSrcY,cx-cinematicSrcX)+Math.PI*0.5;
+    } else {
+      // full pendulum sweep: 0→π*2.4 (well over a full rotation)
+      swingAng=-Math.PI*0.6+p_swing*Math.PI*2.8;
+    }
+    var drawX=(p_swing>0)?cx:ox;
+    var drawY=(p_swing>0)?cy:oy;
+    ctx.save();ctx.translate(drawX,drawY);ctx.rotate(swingAng);
+    ctx.strokeStyle="rgba(210,185,148,0.95)";ctx.lineWidth=Math.max(3,size*0.11);ctx.lineCap="round";
+    // upper arm
+    ctx.beginPath();ctx.moveTo(-size*0.85,0);ctx.lineTo(size*0.65,0);ctx.stroke();
+    // forearm
+    ctx.beginPath();ctx.moveTo(size*0.65,0);ctx.lineTo(size*0.65,size*0.85);ctx.stroke();
+    // joints
+    ctx.fillStyle="rgba(230,205,165,0.95)";
+    [{x:-size*0.85,y:0},{x:size*0.65,y:0},{x:size*0.65,y:size*0.85}].forEach(function(p){
+      ctx.beginPath();ctx.arc(p.x,p.y,Math.max(4,size*0.09),0,Math.PI*2);ctx.fill();
+    });
+    // claw fingers
+    ctx.strokeStyle="rgba(200,178,140,0.9)";ctx.lineWidth=Math.max(2,size*0.07);
+    [[size*0.38,size*1.18],[size*0.92,size*1.18]].forEach(function(p){
+      ctx.beginPath();ctx.moveTo(size*0.65,size*0.85);ctx.lineTo(p[0],p[1]);ctx.stroke();
+    });
+    ctx.restore();
+    // SPARKS phase 0.52+
+    if(p_swing>0.25){
+      var sp=phase(0.52,1.0);
+      var sparkCount=Math.floor(sp*18);
+      for(var k=0;k<sparkCount;k++){
+        var sa=k*(Math.PI*2/sparkCount)+cinematicFrame*0.15;
+        var sr=size*(0.5+sp*1.2);
+        ctx.beginPath();
+        ctx.arc(cx+Math.cos(sa)*sr*0.8,cy+Math.sin(sa)*sr*0.8,
+          Math.max(1,3*sp*(1-(k/sparkCount)*0.4)),0,Math.PI*2);
+        ctx.fillStyle="rgba(255,"+(160+Math.floor(k*6))+",60,"+Math.min(0.9,sp*1.2)+")";ctx.fill();
+      }
+      if(sp>0.55){ctx.fillStyle="rgba(220,160,60,"+(sp-0.55)*0.55+")";ctx.fillRect(0,0,W,H);}
+    }
+
+  } else if(cinematicType==="junk"){
+    var size=13+easeOut(prog)*72;
+    // tumbles in spinning fast
+    var spinA=prog*Math.PI*5;
+    ctx.save();ctx.translate(ox,oy);ctx.rotate(spinA);
+    ctx.beginPath();
+    var sides2=6;
+    for(var k=0;k<sides2;k++){
+      var a2=(k/sides2)*Math.PI*2;
+      var r2=size*(0.62+Math.sin(k*2.3)*0.38);
+      if(k===0)ctx.moveTo(Math.cos(a2)*r2,Math.sin(a2)*r2);
+      else ctx.lineTo(Math.cos(a2)*r2,Math.sin(a2)*r2);
+    }
+    ctx.closePath();
+    ctx.fillStyle="rgba(160,140,120,0.92)";ctx.fill();
+    ctx.strokeStyle="rgba(220,200,170,0.8)";ctx.lineWidth=2.5;ctx.stroke();
+    ctx.restore();
+    // impact (phase 0.62-1.0)
+    var p_imp=phase(0.62,1.0);
+    if(p_imp>0){
+      var er2=size*(1+p_imp*4.5);
+      ctx.beginPath();ctx.arc(cx,cy,er2,0,Math.PI*2);
+      ctx.strokeStyle="rgba(200,160,100,"+(1-p_imp)*0.85+")";ctx.lineWidth=3+p_imp*4;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,er2*1.5*p_imp,0,Math.PI*2);
+      ctx.strokeStyle="rgba(180,140,80,"+(0.45-p_imp*0.45)+")";ctx.lineWidth=1.5;ctx.stroke();
+      if(p_imp>0.5){ctx.fillStyle="rgba(160,120,60,"+(p_imp-0.5)*0.55+")";ctx.fillRect(0,0,W,H);}
+    }
+  }
+
+  // ── ATTITUDE LOCK LOST (phase 0.78-1.0) — enough time to read ──
+  var p_text=phase(0.78,1.0);
+  if(p_text>0){
+    if(Math.floor(cinematicFrame/4)%2===0){
+      ctx.fillStyle="rgba(220,10,10,"+p_text*0.3+")";ctx.fillRect(0,0,W,H);
+    }
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,p_text*1.4);
+    ctx.font='bold '+(20+p_text*10)+'px "Share Tech Mono",monospace';
+    ctx.fillStyle="#ff4444";ctx.textAlign="center";
+    ctx.fillText("ATTITUDE LOCK LOST",cx,cy-16);
+    ctx.font='13px "Share Tech Mono",monospace';
+    ctx.fillStyle="rgba(255,160,160,0.85)";
+    ctx.fillText("DETECTOR COMPROMISED",cx,cy+12);
+    ctx.textAlign="left";ctx.restore();
+  }
+}
+
+
+function updateNameDisplay(){
+  var el=$("game-name-display");if(!el)return;
+  el.innerHTML=gameName.map(function(c,i){
+    return '<span style="display:inline-block;width:22px;text-align:center;'
+      +(i===gameNameCursor?"color:#00d4ff;border-bottom:2px solid #00d4ff":"color:#ffaa00;border-bottom:2px solid #3d6880")
+      +'">'+c+'</span>';
+  }).join('');
+}
+
+async function resetLeaderboard(){
+  gameLeaderboard=[];
+  try{await window.storage.delete("nova-leaderboard");}catch(e){}
+  renderLeaderboard();
+}
+
+loadLeaderboard();
+
+$("btn-meteor").addEventListener("click",function(){
+  var overlay=$("meteor-overlay");
+  if(overlay.style.display==="none"||!overlay.style.display){
+    overlay.style.display="block";
+    $("btn-meteor").classList.add("on");
+    $("game-screen").style.display="flex";
+    $("game-start-btn").textContent="LAUNCH DEFENSE";
+    $("game-final-score").style.display="none";
+    $("game-name-entry").style.display="none";
+    renderLeaderboard();
+  } else {
+    exitMeteorGame();
+  }
+});
+
+// name entry keyboard
+document.addEventListener("keydown",function(e){
+  if(!gameNameEntry)return;
+  if(e.key==="ArrowUp"||e.key==="ArrowDown"){
+    var d=e.key==="ArrowUp"?1:-1;
+    var code=gameName[gameNameCursor].charCodeAt(0)+d;
+    if(code<65)code=90;if(code>90)code=65;
+    gameName[gameNameCursor]=String.fromCharCode(code);
+    updateNameDisplay();
+  } else if(e.key==="ArrowRight"||e.key==="Tab"){
+    e.preventDefault();gameNameCursor=(gameNameCursor+1)%3;updateNameDisplay();
+  } else if(e.key==="ArrowLeft"){
+    gameNameCursor=(gameNameCursor+2)%3;updateNameDisplay();
+  } else if(e.key==="Enter"){
+    confirmName();
+  }
+});
+
+function confirmName(){
+  if(!gameNameEntry)return;
+  addScore(gameName.join(""),gameScore,gameLevel);
+  gameNameEntry=false;
+  $("game-name-entry").style.display="none";
+  renderLeaderboard();
+}
+
+function gotoConst(ra,dc,fov){
+  demoOn=false;earthRot=false;$("btn-demo").classList.remove("on");$("btn-rot").classList.remove("on");$("star-popup").style.display="none";
+  var startRa=cam.ra,startDc=cam.dc,startFov=cam.fov;
+  var dRa=ra-startRa;if(dRa>180)dRa-=360;if(dRa<-180)dRa+=360;
+  var dur=900,tp=performance.now();
+  function ease(t){return t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;}
+  function step(now){
+    var t=Math.min(1,(now-tp)/dur),e2=ease(t);
+    cam.ra=((startRa+dRa*e2)+360)%360;cam.dc=startDc+(dc-startDc)*e2;cam.fov=startFov+(fov-startFov)*e2;
+    $("sl-fov").value=cam.fov;$("vl-fov").textContent=cam.fov.toFixed(0)+"°";$("fovlbl").textContent="FOV: "+cam.fov.toFixed(1)+"°";
+    for(var k in animP)animP[k]=Math.max(0,animP[k]-0.05);for(var k in animPBG)animPBG[k]=Math.max(0,animPBG[k]-0.05);
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+</script>
+</body>
+</html>
